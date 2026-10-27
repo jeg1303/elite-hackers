@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Workspace — ELITE HACKERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="workspace.css">
+</head>
+<body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="auth-screen">
+        <div class="auth-box">
+            <div class="auth-logo">
+                <span class="brand-bracket">&lt;</span>
+                <span class="brand-text">ELITE HACKERS</span>
+                <span class="brand-bracket">/&gt;</span>
+            </div>
+            <h2 class="auth-title">Team Workspace</h2>
+            <p class="auth-subtitle">Sign in to access your team's collaboration hub</p>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login">Sign In</button>
+                <button class="auth-tab" id="tab-register">Register</button>
+            </div>
+
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Enter your username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+                <div id="login-error" class="auth-error"></div>
+                <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+
+            <form id="register-form" class="auth-form hidden">
+                <div class="form-group">
+                    <label class="form-label">Display Name</label>
+                    <input type="text" id="reg-name" class="form-input" placeholder="Your full name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="reg-username" class="form-input" placeholder="Choose a username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="reg-password" class="form-input" placeholder="Choose a password (min 6 chars)" required autocomplete="new-password">
+                </div>
+                <div id="reg-error" class="auth-error"></div>
+                <button type="submit" class="auth-btn">Create Account</button>
+            </form>
+
+            <p class="auth-back"><a href="index.html">← Back to Portfolio</a></p>
+        </div>
+    </div>
+
+    <!-- Workspace App -->
+    <div id="workspace-app" class="workspace-app hidden">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <span class="sb-bracket">&lt;</span>EH<span class="sb-bracket">/&gt;</span>
+                </div>
+                <span class="sidebar-title">Workspace</span>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="user-avatar" id="sidebar-avatar">?</div>
+                <div class="user-info">
+                    <div class="user-name" id="sidebar-username">Loading...</div>
+                    <div class="user-status"><span class="online-dot"></span>Online</div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">GENERAL</div>
+                <button class="sb-nav-item active" data-view="chat" data-channel="general">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    # general
+                    <span class="unread-badge hidden" id="unread-general">0</span>
+                </button>
+                <button class="sb-nav-item" data-view="chat" data-channel="random">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    # random
+                </button>
+
+                <div class="nav-section-label">PROJECTS</div>
+                <button class="sb-nav-item" data-view="chat" data-channel="certivaultid">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    # certivaultid
+                </button>
+                <button class="sb-nav-item" data-view="chat" data-channel="mediflex">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    # mediflex
+                </button>
+                <button class="sb-nav-item" data-view="chat" data-channel="ai-analyzer">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    # ai-analyzer
+                </button>
+
+                <div class="nav-section-label">TOOLS</div>
+                <button class="sb-nav-item" data-view="tasks" id="nav-tasks">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    Task Board
+                </button>
+                <button class="sb-nav-item" data-view="files">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                    Shared Files
+                </button>
+                <button class="sb-nav-item" data-view="members">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                    Members
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="index.html" class="sb-footer-link">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Portfolio
+                </a>
+                <button id="logout-btn" class="sb-footer-link sb-logout">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+
+            <!-- Chat View -->
+            <div id="view-chat" class="view active">
+                <div class="chat-topbar">
+                    <button class="sidebar-toggle" id="sidebar-toggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                    <div class="topbar-channel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <span id="active-channel-name">general</span>
+                    </div>
+                    <div class="topbar-right">
+                        <span class="online-count"><span id="online-count">1</span> online</span>
+                    </div>
+                </div>
+
+                <div class="messages-area" id="messages-area">
+                    <div class="messages-welcome">
+                        <div class="welcome-icon">#</div>
+                        <h3>Welcome to #<span id="welcome-channel">general</span></h3>
+                        <p>This is the beginning of the conversation. Say hello!</p>
+                    </div>
+                </div>
+
+                <div class="message-input-area">
+                    <div class="input-row">
+                        <label class="attach-btn" for="file-upload" title="Attach file">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                        </label>
+                        <input type="file" id="file-upload" hidden>
+                        <input type="text" id="chat-input" class="chat-input-field" placeholder="Message #general..." maxlength="1000">
+                        <button id="send-message-btn" class="send-msg-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        </button>
+                    </div>
+                    <div class="typing-indicator hidden" id="typing-indicator">
+                        <span></span><span></span><span></span>
+                        <em id="typing-user">Someone</em> is typing...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task Board View -->
+            <div id="view-tasks" class="view hidden">
+                <div class="view-topbar">
+                    <button class="sidebar-toggle" id="sidebar-toggle-tasks">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                    <h2 class="view-title">Task Board</h2>
+                    <button class="btn-create-task" id="btn-create-task">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        New Task
+                    </button>
+                </div>
+
+                <div class="task-board" id="task-board">
+                    <div class="task-column" id="col-todo" data-status="todo">
+                        <div class="col-header">
+                            <span class="col-dot col-dot-todo"></span>
+                            <h3>To Do</h3>
+                            <span class="col-count" id="count-todo">0</span>
+                        </div>
+                        <div class="task-list" id="list-todo"></div>
+                        <button class="col-add-btn" onclick="openTaskModal()">+ Add Task</button>
+                    </div>
+                    <div class="task-column" id="col-inprogress" data-status="inprogress">
+                        <div class="col-header">
+                            <span class="col-dot col-dot-inprogress"></span>
+                            <h3>In Progress</h3>
+                            <span class="col-count" id="count-inprogress">0</span>
+                        </div>
+                        <div class="task-list" id="list-inprogress"></div>
+                        <button class="col-add-btn" onclick="openTaskModal('inprogress')">+ Add Task</button>
+                    </div>
+                    <div class="task-column" id="col-review" data-status="review">
+                        <div class="col-header">
+                            <span class="col-dot col-dot-review"></span>
+                            <h3>In Review</h3>
+                            <span class="col-count" id="count-review">0</span>
+                        </div>
+                        <div class="task-list" id="list-review"></div>
+                        <button class="col-add-btn" onclick="openTaskModal('review')">+ Add Task</button>
+                    </div>
+                    <div class="task-column" id="col-done" data-status="done">
+                        <div class="col-header">
+                            <span class="col-dot col-dot-done"></span>
+                            <h3>Done</h3>
+                            <span class="col-count" id="count-done">0</span>
+                        </div>
+                        <div class="task-list" id="list-done"></div>
+                    </div>
+                </div>
+
+                <!-- Smart Task Analyzer Panel -->
+                <div class="analyzer-panel" id="analyzer-panel">
+                    <div class="analyzer-header">
+                        <div class="analyzer-icon">🧠</div>
+                        <h3>Smart Task Analyzer</h3>
+                        <button class="analyze-btn" id="analyze-btn">Analyze Tasks</button>
+                    </div>
+                    <div class="analyzer-results hidden" id="analyzer-results"></div>
+                </div>
+            </div>
+
+            <!-- Files View -->
+            <div id="view-files" class="view hidden">
+                <div class="view-topbar">
+                    <button class="sidebar-toggle" id="sidebar-toggle-files">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                    <h2 class="view-title">Shared Files</h2>
+                    <label class="btn-create-task" for="file-share-input">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Upload File
+                    </label>
+                    <input type="file" id="file-share-input" hidden multiple>
+                </div>
+                <div class="files-list" id="files-list">
+                    <div class="empty-state">
+                        <div class="empty-icon">📂</div>
+                        <p>No files shared yet. Upload a file to get started.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members View -->
+            <div id="view-members" class="view hidden">
+                <div class="view-topbar">
+                    <button class="sidebar-toggle" id="sidebar-toggle-members">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                    </button>
+                    <h2 class="view-title">Team Members</h2>
+                </div>
+                <div class="members-grid" id="members-grid">
+                    <div class="empty-state"><p>Loading members...</p></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Task Create/Edit Modal -->
+    <div class="ws-modal-overlay hidden" id="task-modal-overlay">
+        <div class="ws-modal">
+            <div class="ws-modal-header">
+                <h3 id="task-modal-title">Create Task</h3>
+                <button class="ws-modal-close" onclick="closeTaskModal()">×</button>
+            </div>
+            <form id="task-form">
+                <div class="form-group">
+                    <label class="form-label">Task Title *</label>
+                    <input type="text" id="task-title-input" class="form-input" placeholder="Enter task title" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="task-desc-input" class="form-input form-textarea" placeholder="Task description..." rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select id="task-priority" class="form-input form-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Assign To</label>
+                        <select id="task-assign" class="form-input form-select">
+                            <option value="">Unassigned</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="task-status" class="form-input form-select">
+                            <option value="todo">To Do</option>
+                            <option value="inprogress">In Progress</option>
+                            <option value="review">In Review</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Deadline</label>
+                        <input type="date" id="task-deadline" class="form-input">
+                    </div>
+                </div>
+                <input type="hidden" id="task-edit-id">
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="workspace.js"></script>
+</body>
+</html>

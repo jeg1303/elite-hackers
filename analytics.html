@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Analytics Explorer — ELITE HACKERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tool-base.css">
+    <link rel="stylesheet" href="analytics.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- PapaParse -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="grid-overlay"></div>
+
+    <header class="tool-header">
+        <a href="index.html" class="tool-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Portfolio
+        </a>
+        <div class="tool-title">
+            <div class="tool-icon-wrap" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.25);color:#f59e0b;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <div>
+                <h1>Data Analytics Explorer</h1>
+                <span class="tool-subtitle">Large-Scale CSV Analysis — Up to 1M Records</span>
+            </div>
+        </div>
+        <div class="tool-header-right">
+            <div class="privacy-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Data stays in your browser
+            </div>
+        </div>
+    </header>
+
+    <main class="analytics-main" id="analytics-main">
+
+        <!-- Upload State -->
+        <div id="upload-state" class="upload-state">
+            <div class="upload-box" id="upload-box">
+                <div class="upload-icon">📊</div>
+                <h2>Drop your CSV file here</h2>
+                <p>Or click to browse — supports up to 1 million rows<br>All processing happens in your browser. Your data never leaves your device.</p>
+                <label class="upload-btn" for="csv-file-input">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                    Choose CSV File
+                </label>
+                <input type="file" id="csv-file-input" accept=".csv,.tsv,.txt" hidden>
+                <div class="upload-or">or try a sample</div>
+                <button class="upload-sample-btn" id="load-sample-csv">Load Sample Dataset</button>
+            </div>
+        </div>
+
+        <!-- Progress State -->
+        <div id="progress-state" class="progress-state hidden">
+            <div class="progress-card">
+                <div class="progress-icon">⚡</div>
+                <h3 id="progress-title">Processing...</h3>
+                <p id="progress-desc">Parsing CSV with Web Worker</p>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+                </div>
+                <span class="progress-pct" id="progress-pct">0%</span>
+            </div>
+        </div>
+
+        <!-- Dashboard State -->
+        <div id="dashboard-state" class="dashboard-state hidden">
+            <!-- Top Bar -->
+            <div class="dash-topbar">
+                <div class="dash-filename" id="dash-filename">📄 data.csv</div>
+                <div class="dash-stats-row" id="dash-stats-row"></div>
+                <div class="dash-actions">
+                    <button class="dash-action-btn" id="download-report-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        Download Report
+                    </button>
+                    <button class="dash-action-btn" id="new-file-btn">New File</button>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="dash-tabs">
+                <button class="dash-tab active" data-tab="overview">Overview</button>
+                <button class="dash-tab" data-tab="columns">Columns</button>
+                <button class="dash-tab" data-tab="charts">Charts</button>
+                <button class="dash-tab" data-tab="data-table">Data Preview</button>
+                <button class="dash-tab" data-tab="quality">Data Quality</button>
+            </div>
+
+            <div class="dash-content">
+
+                <!-- Overview Tab -->
+                <div class="dash-tab-content active" id="tab-overview">
+                    <div class="overview-cards" id="overview-cards"></div>
+                    <div class="overview-grid">
+                        <div class="overview-panel" id="numeric-summary-panel">
+                            <h3 class="panel-section-title">Numeric Column Statistics</h3>
+                            <div id="numeric-stats-table"></div>
+                        </div>
+                        <div class="overview-panel" id="category-summary-panel">
+                            <h3 class="panel-section-title">Top Categories</h3>
+                            <div id="category-summary"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columns Tab -->
+                <div class="dash-tab-content hidden" id="tab-columns">
+                    <div class="col-search-row">
+                        <input type="text" id="col-search" class="col-search-input" placeholder="Search columns...">
+                        <select id="col-type-filter" class="form-select-dark" style="width:160px;">
+                            <option value="all">All Types</option>
+                            <option value="numeric">Numeric</option>
+                            <option value="text">Text</option>
+                            <option value="date">Date</option>
+                        </select>
+                    </div>
+                    <div class="columns-grid" id="columns-grid"></div>
+                </div>
+
+                <!-- Charts Tab -->
+                <div class="dash-tab-content hidden" id="tab-charts">
+                    <div class="charts-controls">
+                        <div class="chart-control-group">
+                            <label class="form-label">Chart Type</label>
+                            <select id="chart-type" class="form-select-dark" style="width:140px;">
+                                <option value="bar">Bar</option>
+                                <option value="line">Line</option>
+                                <option value="pie">Pie</option>
+                                <option value="doughnut">Doughnut</option>
+                                <option value="scatter">Scatter</option>
+                            </select>
+                        </div>
+                        <div class="chart-control-group">
+                            <label class="form-label">X Axis / Category</label>
+                            <select id="chart-x" class="form-select-dark" style="width:180px;"></select>
+                        </div>
+                        <div class="chart-control-group">
+                            <label class="form-label">Y Axis / Value</label>
+                            <select id="chart-y" class="form-select-dark" style="width:180px;"></select>
+                        </div>
+                        <div class="chart-control-group">
+                            <label class="form-label">Max Items</label>
+                            <select id="chart-limit" class="form-select-dark" style="width:100px;">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                        <button class="chart-render-btn" id="render-chart-btn">Render Chart</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="main-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Data Table Tab -->
+                <div class="dash-tab-content hidden" id="tab-data-table">
+                    <div class="table-controls">
+                        <input type="text" id="table-search" class="col-search-input" placeholder="Search rows..." style="max-width:280px;">
+                        <label class="form-label" style="margin:0;display:flex;align-items:center;gap:8px;">
+                            Show
+                            <select id="table-page-size" class="form-select-dark" style="width:80px;">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                            </select>
+                            rows
+                        </label>
+                        <button class="dash-action-btn" id="download-csv-btn">Download Cleaned CSV</button>
+                    </div>
+                    <div class="data-table-wrap" id="data-table-wrap">
+                        <table class="data-table" id="data-table"></table>
+                    </div>
+                    <div class="table-pagination" id="table-pagination"></div>
+                </div>
+
+                <!-- Quality Tab -->
+                <div class="dash-tab-content hidden" id="tab-quality">
+                    <div class="quality-grid" id="quality-grid"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="analytics.js"></script>
+</body>
+</html>

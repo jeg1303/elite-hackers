@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Analyzer — ELITE HACKERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tool-base.css">
+    <link rel="stylesheet" href="ai-analyzer.css">
+</head>
+<body>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="grid-overlay"></div>
+
+    <header class="tool-header">
+        <a href="index.html" class="tool-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Portfolio
+        </a>
+        <div class="tool-title">
+            <div class="tool-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            </div>
+            <div>
+                <h1>AI Code Analyzer</h1>
+                <span class="tool-subtitle">Intelligent Code Review &amp; Bug Detection</span>
+            </div>
+        </div>
+        <div class="tool-header-right">
+            <div class="demo-badge">
+                <span class="demo-dot"></span>
+                DEMO MODE
+            </div>
+        </div>
+    </header>
+
+    <main class="tool-main">
+        <aside class="analyzer-sidebar">
+            <div class="sidebar-section">
+                <h3 class="sidebar-section-title">Input Method</h3>
+                <div class="input-tabs">
+                    <button class="inp-tab active" data-tab="paste">Paste Code</button>
+                    <button class="inp-tab" data-tab="github">GitHub URL</button>
+                </div>
+            </div>
+
+            <div id="tab-paste" class="tab-content active">
+                <div class="sidebar-section">
+                    <label class="form-label">Language</label>
+                    <select id="language-select" class="form-select-dark">
+                        <option value="javascript">JavaScript</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C/C++</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
+                        <option value="php">PHP</option>
+                    </select>
+                </div>
+                <div class="sidebar-section">
+                    <label class="form-label">Analysis Focus</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" id="chk-bugs" checked> Bug Detection</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-security" checked> Security Vulnerabilities</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-perf"> Performance Issues</label>
+                        <label class="checkbox-item"><input type="checkbox" id="chk-style"> Code Style</label>
+                    </div>
+                </div>
+                <button class="analyze-code-btn" id="analyze-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    Analyze Code
+                </button>
+            </div>
+
+            <div id="tab-github" class="tab-content hidden">
+                <div class="sidebar-section">
+                    <label class="form-label">GitHub Repository URL</label>
+                    <input type="url" id="github-url" class="form-input-dark" placeholder="https://github.com/user/repo/blob/main/file.js">
+                    <p class="form-hint">⚠️ Only public repositories or repos you've authorized via GitHub OAuth. Never commits without your approval.</p>
+                </div>
+                <div class="auth-notice">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <div>
+                        <strong>Authorization Required</strong>
+                        <p>Connect GitHub OAuth to access private repos. This tool is read-only — it never modifies your code.</p>
+                    </div>
+                </div>
+                <button class="analyze-code-btn" id="github-analyze-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg>
+                    Fetch &amp; Analyze
+                </button>
+            </div>
+
+            <!-- Summary Panel -->
+            <div class="issues-summary hidden" id="issues-summary">
+                <h3 class="sidebar-section-title">Analysis Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item s-critical"><span id="cnt-critical">0</span><small>Critical</small></div>
+                    <div class="summary-item s-high"><span id="cnt-high">0</span><small>High</small></div>
+                    <div class="summary-item s-medium"><span id="cnt-medium">0</span><small>Medium</small></div>
+                    <div class="summary-item s-low"><span id="cnt-low">0</span><small>Low</small></div>
+                </div>
+                <div class="summary-score" id="summary-score"></div>
+            </div>
+        </aside>
+
+        <div class="analyzer-body">
+            <!-- Code Editor -->
+            <div class="code-editor-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Code Editor</span>
+                    <div class="panel-actions">
+                        <button class="panel-action-btn" id="clear-code-btn" title="Clear">Clear</button>
+                        <button class="panel-action-btn" id="load-sample-btn">Load Sample</button>
+                    </div>
+                </div>
+                <div class="code-editor-wrap">
+                    <div class="line-numbers" id="line-numbers"></div>
+                    <textarea id="code-editor" class="code-editor" spellcheck="false" placeholder="// Paste your code here...
+// Or click 'Load Sample' to try an example with known issues.
+
+function calculateDiscount(price, userInput) {
+    // Try pasting code with security or logic issues...
+}" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="results-panel" id="results-panel">
+                <div class="panel-header">
+                    <span class="panel-title">Analysis Results</span>
+                    <div class="panel-actions">
+                        <button class="panel-action-btn hidden" id="export-results-btn">Export</button>
+                    </div>
+                </div>
+
+                <div class="results-placeholder" id="results-placeholder">
+                    <div class="placeholder-icon">🔍</div>
+                    <h3>Ready to Analyze</h3>
+                    <p>Paste your code in the editor and click "Analyze Code" to start.<br>The AI will identify bugs, security vulnerabilities, and suggest fixes.</p>
+                    <div class="demo-notice">
+                        <strong>Demo Mode:</strong> AI analysis uses pattern-matching rules to detect common issues.
+                        Connect your OpenAI API key for full GPT-powered analysis.
+                    </div>
+                </div>
+
+                <div class="results-content hidden" id="results-content">
+                    <div class="results-filter-bar">
+                        <span class="results-count" id="results-count">0 issues found</span>
+                        <div class="results-filters">
+                            <button class="rf-btn active" data-sev="all">All</button>
+                            <button class="rf-btn" data-sev="critical">Critical</button>
+                            <button class="rf-btn" data-sev="high">High</button>
+                            <button class="rf-btn" data-sev="medium">Medium</button>
+                            <button class="rf-btn" data-sev="low">Low</button>
+                        </div>
+                    </div>
+                    <div id="issues-list" class="issues-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="ai-analyzer.js"></script>
+</body>
+</html>

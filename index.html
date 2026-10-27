@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELITE HACKERS — Engineering Platform</title>
+    <meta name="description" content="Elite Hackers — A collective of innovators building the future of automated, secure, and intelligent systems.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <!-- Animated background particles -->
+    <canvas id="particle-canvas"></canvas>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+    <div class="grid-overlay"></div>
+
+    <!-- Navigation -->
+    <nav class="top-nav" id="top-nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-brand">
+                <span class="brand-bracket">&lt;</span>
+                <span class="brand-text">ELITE HACKERS</span>
+                <span class="brand-bracket">/&gt;</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="#hero" class="nav-link active" data-section="hero">Home</a>
+                <a href="#projects" class="nav-link" data-section="projects">Projects</a>
+                <a href="#members" class="nav-link" data-section="members">Team</a>
+                <a href="#contact" class="nav-link" data-section="contact">Contact</a>
+                <a href="workspace.html" class="nav-link nav-cta">
+                    <span class="cta-dot"></span> Workspace
+                </a>
+            </div>
+            <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile nav overlay -->
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay"></div>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero-section">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="hero-badge-dot"></span>
+                <span>SYSTEM STATUS: ACTIVE // DIRECTORY: ROOT</span>
+            </div>
+            <h1 class="hero-title">
+                <span class="hero-title-line">ELITE</span>
+                <span class="hero-title-line accent-gradient">HACKERS</span>
+            </h1>
+            <p class="hero-desc">
+                A collective of innovators, engineers, and developers building the future of automated, secure, and intelligent systems. From healthcare IoT to AI code analysis — we build what matters.
+            </p>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="stat-number" data-target="7">0</span>
+                    <span class="stat-label">Projects</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="stat-number" data-target="7">0</span>
+                    <span class="stat-label">Engineers</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="stat-number" data-target="3">0</span>
+                    <span class="stat-label">Domains</span>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="#projects" class="btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                    View Projects
+                </a>
+                <a href="#members" class="btn-secondary">
+                    Meet The Team
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="hero-code-block">
+                <div class="code-header">
+                    <div class="code-dots"><span></span><span></span><span></span></div>
+                    <span class="code-filename">elite-hackers.ts</span>
+                </div>
+                <pre class="code-content"><code><span class="code-keyword">const</span> <span class="code-var">team</span> <span class="code-op">=</span> <span class="code-keyword">new</span> <span class="code-class">EliteHackers</span><span class="code-punc">();</span>
+
+<span class="code-comment">// Build. Ship. Innovate.</span>
+<span class="code-var">team</span><span class="code-punc">.</span><span class="code-fn">deploy</span><span class="code-punc">([</span>
+  <span class="code-string">'CertiVaultID'</span><span class="code-punc">,</span>
+  <span class="code-string">'Smart Robot Care'</span><span class="code-punc">,</span>
+  <span class="code-string">'Mediflex'</span><span class="code-punc">,</span>
+  <span class="code-string">'AI Code Analyzer'</span><span class="code-punc">,</span>
+  <span class="code-string">'Data Analytics'</span><span class="code-punc">,</span>
+  <span class="code-string">'Team Workspace'</span><span class="code-punc">,</span>
+  <span class="code-string">'Task Analyzer'</span>
+<span class="code-punc">]);</span>
+
+<span class="code-var">team</span><span class="code-punc">.</span><span class="code-fn">status</span><span class="code-punc">();</span> <span class="code-comment">// → ACTIVE 🚀</span></code></pre>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>Scroll to explore</span>
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="projects-section section-padding">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-eyebrow">
+                    <span class="eyebrow-line"></span>
+                    <span class="eyebrow-code">[01]</span>
+                    <span>OUR PROJECTS</span>
+                </div>
+                <h2 class="section-title">What We've Built</h2>
+                <p class="section-subtitle">Seven cutting-edge projects spanning healthcare IoT, AI, data analytics, and developer tools.</p>
+            </div>
+
+            <!-- Project Filter -->
+            <div class="project-filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="ai">AI / ML</button>
+                <button class="filter-btn" data-filter="healthcare">Healthcare</button>
+                <button class="filter-btn" data-filter="fullstack">Full-Stack</button>
+                <button class="filter-btn" data-filter="hardware">Hardware</button>
+                <button class="filter-btn" data-filter="data">Data</button>
+            </div>
+
+            <div class="projects-grid" id="projects-grid">
+
+                <!-- Project 1: CertiVaultID -->
+                <article class="project-card" data-tags="fullstack" data-index="0">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <div class="card-number">01</div>
+                        <div class="card-status status-deployed">Deployed</div>
+                    </div>
+                    <div class="card-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3 class="card-title">CertiVaultID</h3>
+                    <p class="card-subtitle">Digital Certificate Verification</p>
+                    <p class="card-desc">A platform for securely storing digital certificates, generating shareable verification links, and validating certificate authenticity with tamper-proof records.</p>
+                    <div class="card-tags">
+                        <span class="tag">Node.js</span>
+                        <span class="tag">MongoDB</span>
+                        <span class="tag">JWT</span>
+                        <span class="tag">QR Codes</span>
+                        <span class="tag">PDF.js</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(0)">View Details</button>
+                        <div class="card-links">
+                            <span class="card-link-badge">🔒 Secure Storage</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Project 2: Smart Robot Care -->
+                <article class="project-card" data-tags="hardware healthcare" data-index="1">
+                    <div class="card-glow card-glow-purple"></div>
+                    <div class="card-header">
+                        <div class="card-number">02</div>
+                        <div class="card-status status-prototype">Prototype</div>
+                    </div>
+                    <div class="card-icon card-icon-purple">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4m0 0h18"/></svg>
+                    </div>
+                    <h3 class="card-title">Smart Robot Care</h3>
+                    <p class="card-subtitle">Healthcare Companion</p>
+                    <p class="card-desc">An embedded healthcare robotics project supporting patient care through sensor-based monitoring, automated assistance, and interactive alerts with real-time vitals tracking.</p>
+                    <div class="card-tags">
+                        <span class="tag">Raspberry Pi</span>
+                        <span class="tag">Python</span>
+                        <span class="tag">Sensors</span>
+                        <span class="tag">MQTT</span>
+                        <span class="tag">IoT</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(1)">View Details</button>
+                        <div class="card-links">
+                            <span class="card-link-badge">🤖 IoT System</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Project 3: Mediflex -->
+                <article class="project-card" data-tags="healthcare fullstack hardware" data-index="2">
+                    <div class="card-glow card-glow-green"></div>
+                    <div class="card-header">
+                        <div class="card-number">03</div>
+                        <div class="card-status status-active">Active Dev</div>
+                    </div>
+                    <div class="card-icon card-icon-green">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    </div>
+                    <h3 class="card-title">Mediflex</h3>
+                    <p class="card-subtitle">Smart Healthcare Management</p>
+                    <p class="card-desc">An NFC-based healthcare entry and token-management system supporting automated patient token handling and paperless prescriptions with a smart queue dashboard.</p>
+                    <div class="card-tags">
+                        <span class="tag">NFC (PN532)</span>
+                        <span class="tag">React</span>
+                        <span class="tag">Node.js</span>
+                        <span class="tag">WebSockets</span>
+                        <span class="tag">Queue Mgmt</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(2)">View Details</button>
+                        <div class="card-links">
+                            <span class="card-link-badge">🏥 Healthcare</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Project 4: AI Code Analyzer -->
+                <article class="project-card project-card-featured" data-tags="ai fullstack" data-index="3">
+                    <div class="card-glow card-glow-cyan"></div>
+                    <div class="card-badge-featured">Featured</div>
+                    <div class="card-header">
+                        <div class="card-number">04</div>
+                        <div class="card-status status-active">Active Dev</div>
+                    </div>
+                    <div class="card-icon card-icon-cyan">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    </div>
+                    <h3 class="card-title">AI Code Analyzer</h3>
+                    <p class="card-subtitle">Intelligent Code Review</p>
+                    <p class="card-desc">AI-assisted code analysis connecting to authorized GitHub repositories, identifying bugs and vulnerabilities, explaining issues, and suggesting corrected code with severity levels.</p>
+                    <div class="card-tags">
+                        <span class="tag">OpenAI API</span>
+                        <span class="tag">GitHub API</span>
+                        <span class="tag">TypeScript</span>
+                        <span class="tag">AST Parsing</span>
+                        <span class="tag">OAuth</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(3)">View Details</button>
+                        <a href="ai-analyzer.html" class="card-btn-launch">
+                            Launch <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Project 5: Data Analytics -->
+                <article class="project-card project-card-featured" data-tags="data ai fullstack" data-index="4">
+                    <div class="card-glow card-glow-orange"></div>
+                    <div class="card-badge-featured">Featured</div>
+                    <div class="card-header">
+                        <div class="card-number">05</div>
+                        <div class="card-status status-active">Active Dev</div>
+                    </div>
+                    <div class="card-icon card-icon-orange">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <h3 class="card-title">Data Analytics Explorer</h3>
+                    <p class="card-subtitle">Large-Scale CSV Analysis</p>
+                    <p class="card-desc">Accepts large CSV datasets (up to 1M records) for efficient analysis — data cleaning, missing-value detection, statistical summaries, interactive charts, and downloadable reports.</p>
+                    <div class="card-tags">
+                        <span class="tag">Web Workers</span>
+                        <span class="tag">Chart.js</span>
+                        <span class="tag">Papa Parse</span>
+                        <span class="tag">IndexedDB</span>
+                        <span class="tag">D3.js</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(4)">View Details</button>
+                        <a href="analytics.html" class="card-btn-launch">
+                            Launch <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Project 6: Team Workspace -->
+                <article class="project-card" data-tags="fullstack" data-index="5">
+                    <div class="card-glow card-glow-purple"></div>
+                    <div class="card-header">
+                        <div class="card-number">06</div>
+                        <div class="card-status status-deployed">Live</div>
+                    </div>
+                    <div class="card-icon card-icon-purple">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    </div>
+                    <h3 class="card-title">Team Workspace</h3>
+                    <p class="card-subtitle">Collaboration Platform</p>
+                    <p class="card-desc">A real-time team communication platform with direct messaging, group chats, project channels, file sharing, search, and notification system built on WebSockets.</p>
+                    <div class="card-tags">
+                        <span class="tag">WebSockets</span>
+                        <span class="tag">Node.js</span>
+                        <span class="tag">SQLite</span>
+                        <span class="tag">JWT Auth</span>
+                        <span class="tag">File Uploads</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(5)">View Details</button>
+                        <a href="workspace.html" class="card-btn-launch">
+                            Launch <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Project 7: Smart Task Analyzer -->
+                <article class="project-card" data-tags="ai fullstack data" data-index="6">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <div class="card-number">07</div>
+                        <div class="card-status status-active">Active Dev</div>
+                    </div>
+                    <div class="card-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="card-title">Smart Task Analyzer</h3>
+                    <p class="card-subtitle">Team Productivity Intelligence</p>
+                    <p class="card-desc">Integrated task management with intelligent analysis — identifies overdue work, summarizes progress, highlights workload imbalances, and suggests priorities based on real data.</p>
+                    <div class="card-tags">
+                        <span class="tag">AI Analysis</span>
+                        <span class="tag">Drag & Drop</span>
+                        <span class="tag">Charts</span>
+                        <span class="tag">Notifications</span>
+                        <span class="tag">REST API</span>
+                    </div>
+                    <div class="card-footer">
+                        <button class="card-btn-details" onclick="openProjectModal(6)">View Details</button>
+                        <a href="workspace.html#tasks" class="card-btn-launch">
+                            Launch <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                    </div>
+                </article>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="members" class="team-section section-padding">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-eyebrow">
+                    <span class="eyebrow-line"></span>
+                    <span class="eyebrow-code">[02]</span>
+                    <span>THE TEAM</span>
+                </div>
+                <h2 class="section-title">Meet The Engineers</h2>
+                <p class="section-subtitle">Seven specialists, one mission — building intelligent systems that make a difference.</p>
+            </div>
+
+            <!-- Team Search & Filter -->
+            <div class="team-controls">
+                <div class="team-search-wrapper">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" id="team-search" class="team-search" placeholder="Search members..." aria-label="Search team members">
+                </div>
+                <div class="team-role-filters">
+                    <button class="role-filter active" data-role="all">All</button>
+                    <button class="role-filter" data-role="software">Software</button>
+                    <button class="role-filter" data-role="design">Design</button>
+                    <button class="role-filter" data-role="hardware">Hardware</button>
+                    <button class="role-filter" data-role="security">Security</button>
+                </div>
+            </div>
+
+            <div class="team-grid" id="team-grid">
+
+                <div class="member-card" data-role="software" data-name="harish raj">
+                    <div class="member-card-bg"></div>
+                    <div class="member-rank">Lead</div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar">HR</div>
+                        <div class="member-avatar-ring"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Harish raj.S</h3>
+                    <span class="member-role-badge role-software">Software Architect</span>
+                    <p class="member-bio">Designs scalable system architectures and leads technical strategy across all projects.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">CertiVaultID</span>
+                        <span class="member-project-tag">AI Analyzer</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://harishraj2107.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('harish')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="design" data-name="varsha s">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-purple">VS</div>
+                        <div class="member-avatar-ring ring-purple"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Varsha S</h3>
+                    <span class="member-role-badge role-design">UI/UX Lead</span>
+                    <p class="member-bio">Crafts user experiences and design systems that balance aesthetics with functionality.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">Mediflex</span>
+                        <span class="member-project-tag">Workspace</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://silly-mochi-a1dcef.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('varsha')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="software" data-name="pramila j">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-cyan">PJ</div>
+                        <div class="member-avatar-ring ring-cyan"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Pramila.J</h3>
+                    <span class="member-role-badge role-software">Frontend Engineer</span>
+                    <p class="member-bio">Builds pixel-perfect, performant web interfaces and interactive dashboards.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">Data Analytics</span>
+                        <span class="member-project-tag">CertiVaultID</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://portfolio-pramilaj.vercel.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('pramila')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="security" data-name="vasundhara l">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-red">VL</div>
+                        <div class="member-avatar-ring ring-red"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Vasundhara.L</h3>
+                    <span class="member-role-badge role-security">Security Analyst</span>
+                    <p class="member-bio">Ensures application security, conducts vulnerability assessments, and implements auth systems.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">AI Analyzer</span>
+                        <span class="member-project-tag">CertiVaultID</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://vasundhara13.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('vasundhara')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="software" data-name="jegannaathan sj">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-gradient">JS</div>
+                        <div class="member-avatar-ring ring-gradient"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Jegannaathan.S.J</h3>
+                    <span class="member-role-badge role-software">Full-Stack Developer</span>
+                    <p class="member-bio">End-to-end developer building backend APIs, databases, and seamless frontend integrations.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">Team Workspace</span>
+                        <span class="member-project-tag">Task Analyzer</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://jegannaathan.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('jegan')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="software hardware" data-name="hari hara sudhan">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-teal">HS</div>
+                        <div class="member-avatar-ring ring-teal"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Hari hara sudhan.S</h3>
+                    <span class="member-role-badge role-hardware">Systems Engineer</span>
+                    <p class="member-bio">Bridges hardware and software — designs embedded systems and IoT architectures.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">Robot Care</span>
+                        <span class="member-project-tag">Mediflex</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://hariharasudhan1.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('hari')">Profile</button>
+                    </div>
+                </div>
+
+                <div class="member-card" data-role="hardware" data-name="monisha s">
+                    <div class="member-card-bg"></div>
+                    <div class="member-avatar-wrap">
+                        <div class="member-avatar av-pink">MS</div>
+                        <div class="member-avatar-ring ring-pink"></div>
+                        <div class="member-online-dot"></div>
+                    </div>
+                    <h3 class="member-name">Monisha.S</h3>
+                    <span class="member-role-badge role-hardware">Hardware Lead</span>
+                    <p class="member-bio">Leads hardware prototyping, sensor integration, and physical computing solutions.</p>
+                    <div class="member-projects">
+                        <span class="member-project-tag">Robot Care</span>
+                        <span class="member-project-tag">Mediflex</span>
+                    </div>
+                    <div class="member-actions">
+                        <a href="https://monisha21.netlify.app/" target="_blank" rel="noopener" class="member-portfolio-btn">
+                            Portfolio <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                        </a>
+                        <button class="member-profile-btn" onclick="openMemberModal('monisha')">Profile</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section section-padding">
+        <div class="section-container">
+            <div class="section-header">
+                <div class="section-eyebrow">
+                    <span class="eyebrow-line"></span>
+                    <span class="eyebrow-code">[03]</span>
+                    <span>GET IN TOUCH</span>
+                </div>
+                <h2 class="section-title">Open a Channel</h2>
+                <p class="section-subtitle">Ready to collaborate or discuss a project? Reach out through the live chat or drop us a message.</p>
+            </div>
+
+            <div class="contact-terminal-centered">
+                <div class="contact-terminal">
+                    <div class="terminal-bar">
+                        <div class="terminal-dots"><span></span><span></span><span></span></div>
+                        <span class="terminal-title">elite@hackers:~$</span>
+                    </div>
+                    <div class="terminal-body" id="terminal-body">
+                        <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cmd">whoami</span></div>
+                        <div class="terminal-line t-output">elite-hackers-team</div>
+                        <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cmd">status --all</span></div>
+                        <div class="terminal-line t-output t-green">✓ CertiVaultID ............ deployed</div>
+                        <div class="terminal-line t-output t-yellow">⚡ AI Code Analyzer ....... in progress</div>
+                        <div class="terminal-line t-output t-yellow">⚡ Data Analytics ......... in progress</div>
+                        <div class="terminal-line t-output t-green">✓ Team Workspace ......... live</div>
+                        <div class="terminal-line t-output t-yellow">⚡ Mediflex ............... in progress</div>
+                        <div class="terminal-line"><span class="t-prompt">$</span> <span class="t-cmd t-blink">_</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <span class="brand-bracket">&lt;</span>
+                <span class="brand-text">ELITE HACKERS</span>
+                <span class="brand-bracket">/&gt;</span>
+            </div>
+            <p class="footer-tagline">Building the future, one commit at a time.</p>
+            <div class="footer-nav">
+                <a href="#projects">Projects</a>
+                <a href="#members">Team</a>
+                <a href="workspace.html">Workspace</a>
+                <a href="ai-analyzer.html">AI Analyzer</a>
+                <a href="analytics.html">Analytics</a>
+                <a href="admin.html">Admin</a>
+            </div>
+            <p class="footer-copy">&copy; 2026 &nbsp;// &nbsp;<span class="accent-text">ELITE HACKERS</span> &nbsp;// &nbsp;Made with <span class="footer-heart">❤️</span> by the team</p>
+        </div>
+    </footer>
+
+    <!-- Project Modal -->
+    <div class="modal-overlay" id="project-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeProjectModal()" aria-label="Close modal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="modal-content" id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Member Modal -->
+    <div class="modal-overlay" id="member-modal" role="dialog" aria-modal="true">
+        <div class="modal-box modal-box-member">
+            <button class="modal-close" onclick="closeMemberModal()" aria-label="Close modal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+            <div class="modal-content" id="member-modal-content"></div>
+        </div>
+    </div>
+
+    <script src="chat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

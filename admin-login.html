@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Elite Hackers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Background grids and glow nodes -->
+    <div class="cyber-glow-1"></div>
+    <div class="cyber-glow-2"></div>
+    <div class="cyber-grid-overlay"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="security-shield">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <span class="security-tag">// SECURE ACCESS</span>
+                <h1>ADMIN PORTAL</h1>
+                <p>Elite Hackers Support Feed</p>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="password">AUTHENTICATION PASSCODE</label>
+                    <input type="password" id="password" name="password" required placeholder="••••••••••••" autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    <span class="btn-text">INITIALIZE DECRYPT</span>
+                    <div class="btn-loader" style="display: none;"></div>
+                </button>
+                
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+            </form>
+            
+            <div class="login-footer">
+                <p>SESSION LOGS: RESTRICTED // 256-BIT ENCRYPTED</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const loginBtn = document.querySelector('.login-btn');
+            const btnText = document.querySelector('.btn-text');
+            const btnLoader = document.querySelector('.btn-loader');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'block';
+            errorMessage.style.display = 'none';
+            
+            // Simulate authentication delay
+            setTimeout(() => {
+                if (password === 'elitehackers2024') {
+                    // Store session
+                    sessionStorage.setItem('adminAuth', 'true');
+                    // Redirect to admin panel
+                    window.location.href = 'admin.html';
+                } else {
+                    // Show error
+                    errorMessage.textContent = 'Decryption failed. Invalid credentials.';
+                    errorMessage.style.display = 'block';
+                    
+                    // Reset button state
+                    loginBtn.disabled = false;
+                    btnText.style.display = 'block';
+                    btnLoader.style.display = 'none';
+                    
+                    // Shake animation
+                    document.querySelector('.login-card').classList.add('shake');
+                    setTimeout(() => {
+                        document.querySelector('.login-card').classList.remove('shake');
+                    }, 500);
+                }
+            }, 1000);
+        });
+        
+        // Check if already authenticated
+        if (sessionStorage.getItem('adminAuth') === 'true') {
+            window.location.href = 'admin.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Elite Hackers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Background grids and glow nodes -->
+    <div class="cyber-glow-1"></div>
+    <div class="cyber-glow-2"></div>
+    <div class="cyber-grid-overlay"></div>
+
+    <div id="login-container" class="login-container" style="display: none;">
+        <div class="login-box">
+            <div class="login-header">
+                <div class="security-shield">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <span class="security-tag">// ACCESS DENIED</span>
+                <h1>DECRYPT FEED</h1>
+                <p>Elite Hackers Support Console</p>
+            </div>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="password">AUTHENTICATION PASSCODE</label>
+                    <input type="password" id="password" placeholder="••••••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">DECRYPT FEED</button>
+                <div id="login-error" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="admin-panel">
+        <header class="admin-header">
+            <div class="header-content">
+                <div class="header-title-area">
+                    <span class="header-prefix">// TERMINAL_CONSOLE</span>
+                    <h1>ELITE HACKERS CONTROL</h1>
+                </div>
+                <button id="logout-btn" class="logout-btn">TERMINATE SESSION</button>
+            </div>
+        </header>
+
+        <div class="admin-container">
+            <div class="stats-section">
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-users">0</h3>
+                        <p>CONNECTED CHANNELS</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="total-messages">0</h3>
+                        <p>PACKETS RECEIVED</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="active-users">0</h3>
+                        <p>ACTIVE SESSIONS</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="messages-section">
+                    <div class="section-header">
+                        <h2>LIVE COMMUNICATION PACKETS</h2>
+                        <button id="clear-messages-btn" class="action-btn" style="display: none;">PURGE LOGS</button>
+                    </div>
+                    <div id="messages-container" class="messages-container">
+                        <div class="empty-state">
+                            <p>// WAITING FOR INCOMING CHANNELS...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="users-section">
+                    <div class="section-header">
+                        <h2>ACTIVE CHANNELS</h2>
+                    </div>
+                    <div id="users-container" class="users-container">
+                        <div class="empty-state">
+                            <p>// NO ACTIVE NODES DETECTED</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="response-section" class="response-section" style="display: none;">
+                <div class="section-header">
+                    <h2>BROADCAST PACKET RESPONSE</h2>
+                </div>
+                <div class="response-form">
+                    <div class="select-wrapper">
+                        <select id="target-user" class="user-select">
+                            <option value="all">ALL NODES</option>
+                        </select>
+                    </div>
+                    <textarea id="response-message" placeholder="Type transmission payload here..." rows="3"></textarea>
+                    <button id="send-response-btn" class="send-btn">TRANSMIT RESPONSE</button>
+                </div>
+            </div>
+            
+            <div id="login-prompt" class="login-prompt">
+                <div class="login-prompt-content">
+                    <p>🔒 ENCRYPTED MONITORING // LOGIN REQUIRED TO TRANSMIT RESPONSES</p>
+                    <button id="show-login-btn" class="show-login-btn">DECRYPT FEED</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
