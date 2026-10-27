@@ -209,18 +209,18 @@ class ChatBubble {
     }
 
     connectWebSocket() {
-        // Skip WebSocket on Vercel/static deployments — only attempt on
-        // localhost or when WS_BASE_URL is explicitly configured.
         const hostname = window.location.hostname;
-        const isLocal  = !hostname || hostname === 'localhost' || hostname === '127.0.0.1';
-        const hasOverride = !!window.WS_BASE_URL;
+        const isLocal       = !hostname || hostname === 'localhost' || hostname === '127.0.0.1';
+        const isStaticHost  = hostname.endsWith('vercel.app') || hostname.endsWith('netlify.app') || hostname.endsWith('github.io') || hostname.endsWith('pages.dev');
+        const hasOverride   = !!window.WS_BASE_URL;
 
-        if (!isLocal && !hasOverride) {
-            // Static deployment — chat works in offline/local mode only
-            console.info('Chat: WebSocket skipped on static host. Set window.WS_BASE_URL to enable.');
+        // On pure static hosts (Vercel/Netlify) there is no WS server — skip gracefully
+        if (isStaticHost && !hasOverride) {
+            console.info('Chat: WebSocket skipped on static host.');
             this.wsOffline = true;
             return;
         }
+        // On Render (.onrender.com) or localhost the Node server handles WS
 
         try {
             const wsUrl = this.getWebSocketUrl();

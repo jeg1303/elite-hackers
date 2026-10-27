@@ -1,12 +1,15 @@
 {
   "name": "elite-hackers",
   "version": "2.0.0",
-  "description": "Elite Hackers — Premium Engineering Platform (static site)",
+  "description": "Elite Hackers — Premium Engineering Platform",
   "scripts": {
     "start": "node _server/server.js",
-    "dev": "node _server/server.js",
-    "build": "echo Static site - no build needed"
+    "build": "cd _server && npm install",
+    "dev": "node _server/server.js"
   },
   "author": "Elite Hackers Team",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
 }
