@@ -1,21 +1,12 @@
 {
   "name": "elite-hackers",
   "version": "2.0.0",
-  "description": "Elite Hackers — Premium Engineering Platform",
-  "main": "server.js",
+  "description": "Elite Hackers — Premium Engineering Platform (static site)",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "serve": "node static-server.js",
-    "build": "echo 'Static site — no build step required'"
+    "start": "node _server/server.js",
+    "dev": "node _server/server.js",
+    "build": "echo Static site - no build needed"
   },
-  "keywords": ["elite-hackers", "portfolio", "websocket", "realtime"],
   "author": "Elite Hackers Team",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "ws": "^8.14.2"
-  }
+  "license": "MIT"
 }
