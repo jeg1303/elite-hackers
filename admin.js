@@ -86,91 +86,87 @@ function connectWS(onOpenCb) {
 }
 
 function handleWsMsg(data) {
-    switch (data.type) {
+    // Use if/else instead of switch to avoid strict-mode const-in-case errors
+    if (data.type === 'admin_auth_result') {
+        if (data.ok) {
+            isAuthed = true;
+            sessionStorage.setItem('eh_admin_pw', currentAdminPw);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('admin-app').classList.remove('hidden');
+            document.getElementById('info-host').textContent = getWsUrl();
+            renderDashboard();
+            // Request project list and all channel histories on login
+            wsSend({ type: 'get_projects' });
+            ['general','random','certivaultid','mediflex','ai-analyzer'].forEach(ch =>
+                wsSend({ type: 'get_history', channel: ch })
+            );
+        } else {
+            document.getElementById('login-error').textContent = data.reason || 'Wrong password.';
+        }
 
-        case 'admin_auth_result':
-            if (data.ok) {
-                isAuthed = true;
-                sessionStorage.setItem('eh_admin_pw', currentAdminPw);
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('admin-app').classList.remove('hidden');
-                document.getElementById('info-host').textContent = getWsUrl();
-                renderDashboard();
-            } else {
-                document.getElementById('login-error').textContent = data.reason || 'Wrong password.';
-            }
-            break;
+    } else if (data.type === 'admin_change_password_result') {
+        const res = document.getElementById('pw-result');
+        if (data.ok) {
+            res.className = 'form-feedback success';
+            res.textContent = '✓ Password updated successfully.';
+            sessionStorage.setItem('eh_admin_pw', document.getElementById('new-password').value);
+            document.getElementById('change-password-form').reset();
+        } else {
+            res.className = 'form-feedback error';
+            res.textContent = '✗ ' + (data.reason || 'Failed.');
+        }
 
-        case 'admin_change_password_result':
-            const res = document.getElementById('pw-result');
-            if (data.ok) {
-                res.className = 'form-feedback success';
-                res.textContent = '✓ Password updated successfully.';
-                sessionStorage.setItem('eh_admin_pw', document.getElementById('new-password').value);
-                document.getElementById('change-password-form').reset();
-            } else {
-                res.className = 'form-feedback error';
-                res.textContent = '✗ ' + (data.reason || 'Failed.');
-            }
-            break;
+    } else if (data.type === 'channel_history') {
+        allMessages = allMessages.filter(m => m.channel !== data.channel);
+        (data.messages || []).forEach(m => allMessages.push(m));
+        messageCount = allMessages.length;
+        if (activeTab === 'chat' && data.channel === activeChatCh) renderChatTab();
+        if (activeTab === 'dashboard') renderDashboard();
+        updateStatBadges();
 
-        case 'channel_history':
-            // Replace messages for that channel in our local store
-            allMessages = allMessages.filter(m => m.channel !== data.channel);
-            (data.messages || []).forEach(m => allMessages.push(m));
-            messageCount = allMessages.length;
-            if (activeTab === 'chat' && data.channel === activeChatCh) renderChatTab();
-            if (activeTab === 'dashboard') renderDashboard();
-            updateStatBadges();
-            break;
+    } else if (data.type === 'message') {
+        allMessages.push(data);
+        messageCount++;
+        updateStatBadges();
+        if (activeTab === 'chat' && data.channel === activeChatCh) appendChatMsg(data);
+        if (activeTab === 'dashboard') prependDashMsg(data);
+        if (activeTab !== 'chat') {
+            const badge = document.getElementById('chat-badge');
+            badge.classList.remove('hidden');
+            badge.textContent = String(parseInt(badge.textContent || '0') + 1);
+        }
 
-        case 'message':
-            allMessages.push(data);
-            messageCount++;
-            updateStatBadges();
-            if (activeTab === 'chat' && data.channel === activeChatCh) appendChatMsg(data);
-            if (activeTab === 'dashboard') prependDashMsg(data);
-            // Show badge on chat nav button if not on chat tab
-            if (activeTab !== 'chat') {
-                const badge = document.getElementById('chat-badge');
-                badge.classList.remove('hidden');
-                badge.textContent = parseInt(badge.textContent||'0') + 1;
-            }
-            break;
+    } else if (data.type === 'user_list') {
+        onlineUsers.clear();
+        (data.users || []).forEach(u => onlineUsers.set(u, { joinedAt: new Date().toISOString(), channel: 'general' }));
+        updateStatBadges();
+        if (activeTab === 'users') renderUsersTab();
+        if (activeTab === 'dashboard') renderDashboard();
+        updateMsgTargetDropdown();
 
-        case 'user_list':
-            onlineUsers.clear();
-            (data.users || []).forEach(u => onlineUsers.set(u, { joinedAt: new Date().toISOString(), channel: 'general' }));
-            updateStatBadges();
-            if (activeTab === 'users') renderUsersTab();
-            if (activeTab === 'dashboard') renderDashboard();
-            updateMsgTargetDropdown();
-            break;
+    } else if (data.type === 'user_join') {
+        onlineUsers.set(data.userName, { joinedAt: data.timestamp || new Date().toISOString(), channel: 'general' });
+        updateStatBadges();
+        if (activeTab === 'users') renderUsersTab();
+        if (activeTab === 'dashboard') renderDashboard();
+        updateMsgTargetDropdown();
 
-        case 'user_join':
-            onlineUsers.set(data.userName, { joinedAt: data.timestamp || new Date().toISOString(), channel: 'general' });
-            updateStatBadges();
-            if (activeTab === 'users') renderUsersTab();
-            updateMsgTargetDropdown();
-            break;
+    } else if (data.type === 'user_left') {
+        onlineUsers.delete(data.userName);
+        updateStatBadges();
+        if (activeTab === 'users') renderUsersTab();
+        if (activeTab === 'dashboard') renderDashboard();
+        updateMsgTargetDropdown();
 
-        case 'user_left':
-            onlineUsers.delete(data.userName);
-            updateStatBadges();
-            if (activeTab === 'users') renderUsersTab();
-            updateMsgTargetDropdown();
-            break;
+    } else if (data.type === 'projects_list') {
+        projects = data.projects || [];
+        updateStatBadges();
+        if (activeTab === 'projects') renderProjectsTab();
+        if (activeTab === 'dashboard') renderDashboard();
 
-        case 'projects_list':
-            projects = data.projects || [];
-            updateStatBadges();
-            if (activeTab === 'projects') renderProjectsTab();
-            break;
-
-        case 'channel_cleared':
-            allMessages = allMessages.filter(m => m.channel !== data.channel);
-            if (activeTab === 'chat' && data.channel === activeChatCh) renderChatTab();
-            break;
+    } else if (data.type === 'channel_cleared') {
+        allMessages = allMessages.filter(m => m.channel !== data.channel);
+        if (activeTab === 'chat' && data.channel === activeChatCh) renderChatTab();
     }
 }
 

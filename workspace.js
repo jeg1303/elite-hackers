@@ -173,8 +173,9 @@ function connectWebSocket() {
         ws.onopen = () => {
             wsReady = true;
             clearTimeout(reconnectTimer);
-            // Announce ourselves
+            // Announce ourselves and request current channel history
             wsSend({ type: 'user_join', userName: currentUser.name, initials: currentUser.initials, channel: currentChannel });
+            wsSend({ type: 'get_history', channel: currentChannel });
             updateConnectionBadge(true);
         };
         ws.onmessage = e => {
@@ -189,63 +190,69 @@ function connectWebSocket() {
     } catch {}
 }
 
+// Track IDs of messages we sent ourselves to skip echoes from server
+const sentMsgIds = new Set();
+
 function handleWsMessage(data) {
-    switch (data.type) {
+    if (data.type === 'channel_history') {
+        if (data.channel === currentChannel) {
+            lastSender = null;
+            clearMessages();
+            (data.messages || []).forEach(m => {
+                const isSelf = m.userName === currentUser.name;
+                renderMessage(m, isSelf);
+            });
+            scrollToBottom();
+        }
 
-        case 'channel_history':
-            if (data.channel === currentChannel) {
-                clearMessages();
-                (data.messages || []).forEach(m => renderMessage(m, false));
+    } else if (data.type === 'message') {
+        // Skip echo of our own optimistically-rendered message
+        if (data.msgId && sentMsgIds.has(data.msgId)) {
+            sentMsgIds.delete(data.msgId);
+            return;
+        }
+        if (data.channel === currentChannel) {
+            const isSelf = data.userName === currentUser.name;
+            // Only render from server for OTHER users' messages
+            // (our own messages were already rendered optimistically)
+            if (!isSelf) {
+                renderMessage(data, false);
                 scrollToBottom();
             }
-            break;
+        } else {
+            showUnread(data.channel);
+        }
 
-        case 'message':
-            if (data.channel === currentChannel) {
-                const isSelf = data.userName === currentUser.name;
-                renderMessage(data, isSelf);
-                scrollToBottom();
-            } else {
-                showUnread(data.channel);
-            }
-            break;
+    } else if (data.type === 'user_join') {
+        onlineUsers.set(data.userName, true);
+        updateOnlineCount();
+        renderMembersView();
+        if (data.userName !== currentUser.name) {
+            appendSystemMsg(`${esc(data.userName)} joined`);
+        }
 
-        case 'user_join':
-            onlineUsers.set(data.userName, true);
-            updateOnlineCount();
-            renderMembersView();
-            if (data.userName !== currentUser.name) {
-                appendSystemMsg(`${esc(data.userName)} joined`);
-            }
-            break;
+    } else if (data.type === 'user_left') {
+        onlineUsers.delete(data.userName);
+        updateOnlineCount();
+        renderMembersView();
+        appendSystemMsg(`${esc(data.userName)} left`);
 
-        case 'user_left':
-            onlineUsers.delete(data.userName);
-            updateOnlineCount();
-            renderMembersView();
-            appendSystemMsg(`${esc(data.userName)} left`);
-            break;
+    } else if (data.type === 'user_list') {
+        onlineUsers.clear();
+        (data.users || []).forEach(u => onlineUsers.set(u, true));
+        updateOnlineCount();
+        renderMembersView();
 
-        case 'user_list':
-            onlineUsers.clear();
-            (data.users || []).forEach(u => onlineUsers.set(u, true));
-            updateOnlineCount();
-            renderMembersView();
-            break;
+    } else if (data.type === 'kicked') {
+        alert(`You were removed: ${data.reason || 'Kicked by admin'}`);
+        Store.del('eh_session');
+        location.reload();
 
-        case 'kicked':
-            alert(`You were removed: ${data.reason || 'Kicked by admin'}`);
-            Store.del('eh_session');
-            location.reload();
-            break;
-
-        case 'channel_cleared':
-            if (data.channel === currentChannel) clearMessages();
-            break;
-
-        case 'projects_list':
-            // Projects managed by admin — not shown in workspace currently
-            break;
+    } else if (data.type === 'channel_cleared') {
+        if (data.channel === currentChannel) {
+            lastSender = null;
+            clearMessages();
+        }
     }
 }
 
@@ -346,8 +353,13 @@ function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const text  = input.value.trim();
     if (!text) return;
+
+    const msgId = `${currentUser.username}_${Date.now()}`;
+    sentMsgIds.add(msgId);
+
     const payload = {
         type:      'message',
+        msgId,
         message:   text,
         text:      text,
         channel:   currentChannel,
@@ -356,15 +368,18 @@ function sendChatMessage() {
         initials:  currentUser.initials,
         timestamp: new Date().toISOString()
     };
-    // Optimistically render self message
+
+    // Render our own message immediately (optimistic)
     renderMessage({ ...payload, isSelf: true }, true);
+    lastSender = currentUser.name;
     scrollToBottom();
-    // Clear unread for this channel
+
+    // Clear unread badge for this channel
     const badge = document.querySelector(`.sb-nav-item[data-channel="${currentChannel}"] .unread-badge`);
     if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
+
     wsSend(payload);
     input.value = '';
-    lastSender = currentUser.name;
 }
 
 document.getElementById('send-message-btn').addEventListener('click', sendChatMessage);

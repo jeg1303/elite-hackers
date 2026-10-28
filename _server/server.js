@@ -240,7 +240,8 @@ wss.on('connection', (ws) => {
                 case 'message': {
                     if (!clientName) break;
                     const msg = {
-                        type: 'message',
+                        type:      'message',
+                        msgId:     data.msgId || null,
                         channel:   data.channel || 'general',
                         userName:  clientName,
                         name:      clientName,
