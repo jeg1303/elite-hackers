@@ -252,3 +252,13 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
     .form-row{grid-template-columns:1fr;}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+
+/* ── Direct Message Sidebar ───────────────────── */
+.dm-user-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;background:transparent;color:var(--text-secondary);font-family:var(--font-body);font-size:.85em;cursor:pointer;text-align:left;transition:all .2s;position:relative;}
+.dm-user-btn:hover{background:#f1f5f9;color:var(--text-primary);}
+.dm-user-btn.active{background:#eff6ff;color:var(--accent-blue);}
+.dm-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#dbeafe,#ede9fe);display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:700;font-size:.68em;color:var(--accent-blue);flex-shrink:0;}
+.dm-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dm-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.dm-online{background:#059669;box-shadow:0 0 5px rgba(5,150,105,.5);}
+.dm-offline{background:#cbd5e1;}

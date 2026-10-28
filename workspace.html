@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
+    <!-- WebSocket config — must load before workspace.js -->
+    <script src="ws-config.js"></script>
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="grid-overlay"></div>
@@ -109,6 +111,11 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     # ai-analyzer
                 </button>
+
+                <div class="nav-section-label">DIRECT MESSAGES</div>
+                <div id="dm-users-list">
+                    <div style="font-size:.75em;color:var(--text-muted);padding:8px 10px;">Loading users…</div>
+                </div>
 
                 <div class="nav-section-label">TOOLS</div>
                 <button class="sb-nav-item" data-view="tasks" id="nav-tasks">

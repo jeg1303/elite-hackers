@@ -1,6 +1,7 @@
 // =====================================================
 // Elite Hackers — WebSocket + Static File Server
-// Serves static files from repo root + real-time chat
+// Features: group channels, private DMs, user registry,
+//           admin dashboard, projects management
 // =====================================================
 'use strict';
 
@@ -12,48 +13,63 @@ const path      = require('path');
 const PORT           = process.env.PORT ? Number(process.env.PORT) : 8080;
 let   ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'elitehackers2024';
 
-// Serve static files from the REPO ROOT (one level up from _server/)
 const ROOT = path.resolve(__dirname, '..');
 
-// ── In-Memory State ──────────────────────────
-// clients: Map<clientId, { ws, name, isAdmin }>
-const clients  = new Map();
-// channelHistory: Map<channel, Array<msg>>  — last 200 per channel
-const history  = new Map();
-// projects: Array  — admin-managed, persisted to disk
-let   projects = loadProjects();
+// ── Persistence helpers ───────────────────────
+const DATA_DIR        = __dirname;
+const PROJECTS_FILE   = path.join(DATA_DIR, 'projects.json');
+const USERS_FILE      = path.join(DATA_DIR, 'users.json');
+const CHANNELS_FILE   = path.join(DATA_DIR, 'channels.json');
+const DMS_FILE        = path.join(DATA_DIR, 'dms.json');
 
-// ── Disk persistence for projects ────────────
-const PROJECTS_FILE = path.join(__dirname, 'projects.json');
-function loadProjects() {
-    try { return JSON.parse(fs.readFileSync(PROJECTS_FILE, 'utf8')); }
-    catch { return []; }
+function readJSON(file, def) {
+    try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+    catch { return def; }
 }
-function saveProjects() {
-    try { fs.writeFileSync(PROJECTS_FILE, JSON.stringify(projects, null, 2)); }
-    catch (e) { console.error('Failed to save projects:', e.message); }
-}
-function pushHistory(channel, msg) {
-    if (!history.has(channel)) history.set(channel, []);
-    const arr = history.get(channel);
-    arr.push(msg);
-    if (arr.length > 200) arr.shift();
+function writeJSON(file, data) {
+    try { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
+    catch (e) { console.error('Write error', file, e.message); }
 }
 
-// ── MIME Types ────────────────────────────────
-const MIME = {
-    '.html':'.html', '.css':'text/css; charset=utf-8',
-    '.js':'application/javascript; charset=utf-8',
-    '.json':'application/json; charset=utf-8',
-    '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
-    '.gif':'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon',
-    '.txt':'text/plain; charset=utf-8', '.woff2':'font/woff2', '.woff':'font/woff',
-};
+// ── Persisted data ────────────────────────────
+let projects      = readJSON(PROJECTS_FILE, []);
+let registeredUsers = readJSON(USERS_FILE, []);   // [{ name, username, password, initials, joinedAt }]
+let channelHistory  = readJSON(CHANNELS_FILE, {}); // { channel: [msg,...] }
+let dmHistory       = readJSON(DMS_FILE, {});       // { "userA|userB": [msg,...] }
+
+function saveProjects()  { writeJSON(PROJECTS_FILE, projects); }
+function saveUsers()     { writeJSON(USERS_FILE, registeredUsers); }
+function saveChannels()  { writeJSON(CHANNELS_FILE, channelHistory); }
+function saveDMs()       { writeJSON(DMS_FILE, dmHistory); }
+
+function dmKey(a, b) {
+    return [a, b].sort().join('|');
+}
+function pushChannel(channel, msg) {
+    if (!channelHistory[channel]) channelHistory[channel] = [];
+    channelHistory[channel].push(msg);
+    if (channelHistory[channel].length > 300) channelHistory[channel].shift();
+}
+function pushDM(userA, userB, msg) {
+    const key = dmKey(userA, userB);
+    if (!dmHistory[key]) dmHistory[key] = [];
+    dmHistory[key].push(msg);
+    if (dmHistory[key].length > 300) dmHistory[key].shift();
+}
+
+// ── Runtime state ─────────────────────────────
+// clients: Map<clientId, { ws, name, username, initials, isAdmin }>
+const clients = new Map();
+
+// ── MIME map ──────────────────────────────────
 const MIME_MAP = {
-    '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8',
-    '.js':'application/javascript; charset=utf-8', '.json':'application/json; charset=utf-8',
-    '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.gif':'image/gif',
-    '.svg':'image/svg+xml', '.ico':'image/x-icon', '.txt':'text/plain; charset=utf-8',
+    '.html':'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js':  'application/javascript; charset=utf-8',
+    '.json':'application/json; charset=utf-8',
+    '.png': 'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg',
+    '.gif': 'image/gif', '.svg':'image/svg+xml', '.ico':'image/x-icon',
+    '.txt': 'text/plain; charset=utf-8',
     '.woff2':'font/woff2', '.woff':'font/woff',
 };
 
@@ -75,16 +91,93 @@ const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
 
-    // Health check
+    // Health check (keeps Render free tier alive)
     if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end('OK'); return;
     }
 
-    // API: get projects
+    // ── REST API ──────────────────────────────
+    // GET /api/projects
     if (req.url === '/api/projects' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(projects)); return;
+    }
+
+    // GET /api/users  (admin-only via query param for simplicity)
+    if (req.url.startsWith('/api/users') && req.method === 'GET') {
+        const url    = new URL(req.url, `http://localhost`);
+        const pw     = url.searchParams.get('pw');
+        if (pw !== ADMIN_PASSWORD) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Unauthorized' })); return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(registeredUsers)); return;
+    }
+
+    // POST /api/register
+    if (req.url === '/api/register' && req.method === 'POST') {
+        let body = '';
+        req.on('data', d => body += d);
+        req.on('end', () => {
+            try {
+                const { name, username, password } = JSON.parse(body);
+                if (!name || !username || !password) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Missing fields' })); return;
+                }
+                if (password.length < 6) {
+                    res.writeHead(400, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Password too short' })); return;
+                }
+                const uname = username.trim().toLowerCase();
+                if (registeredUsers.find(u => u.username === uname)) {
+                    res.writeHead(409, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Username taken' })); return;
+                }
+                const user = {
+                    name: name.trim(),
+                    username: uname,
+                    password,          // plain for demo; hash in production
+                    initials: makeInitials(name.trim()),
+                    joinedAt: new Date().toISOString()
+                };
+                registeredUsers.push(user);
+                saveUsers();
+                // Notify admin panels about new user
+                broadcastAdmins({ type: 'registered_users', users: registeredUsers });
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, user: { name: user.name, username: user.username, initials: user.initials } }));
+            } catch(e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Bad JSON' }));
+            }
+        });
+        return;
+    }
+
+    // POST /api/login
+    if (req.url === '/api/login' && req.method === 'POST') {
+        let body = '';
+        req.on('data', d => body += d);
+        req.on('end', () => {
+            try {
+                const { username, password } = JSON.parse(body);
+                const uname = (username || '').trim().toLowerCase();
+                const user  = registeredUsers.find(u => u.username === uname && u.password === password);
+                if (!user) {
+                    res.writeHead(401, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: 'Invalid credentials' })); return;
+                }
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ ok: true, user: { name: user.name, username: user.username, initials: user.initials } }));
+            } catch(e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ error: 'Bad JSON' }));
+            }
+        });
+        return;
     }
 
     // Static files
@@ -113,6 +206,7 @@ const wss = new WebSocket.Server({ server });
 wss.on('connection', (ws) => {
     let clientId   = null;
     let clientName = null;
+    let clientUsername = null;
     let isAdmin    = false;
 
     function send(payload) {
@@ -126,22 +220,21 @@ wss.on('connection', (ws) => {
 
             switch (data.type) {
 
-                // ── Admin login ────────────────────────────
+                // ── Admin auth ─────────────────────────────
                 case 'admin_auth': {
                     if (data.password !== ADMIN_PASSWORD) {
-                        send({ type: 'admin_auth_result', ok: false, reason: 'Wrong password' });
-                        break;
+                        send({ type: 'admin_auth_result', ok: false, reason: 'Wrong password' }); break;
                     }
-                    isAdmin    = true;
-                    clientId   = 'admin_' + Date.now();
+                    isAdmin = true;
+                    clientId = 'admin_' + Date.now();
                     clientName = 'Admin';
-                    clients.set(clientId, { ws, name: 'Admin', isAdmin: true });
+                    clients.set(clientId, { ws, name: 'Admin', username: 'admin', isAdmin: true });
                     send({ type: 'admin_auth_result', ok: true });
-                    // Send full state
-                    send({ type: 'user_list',   users:    getUserList() });
+                    send({ type: 'user_list', users: getUserList() });
+                    send({ type: 'registered_users', users: registeredUsers });
                     send({ type: 'projects_list', projects });
-                    // Send all channel histories
-                    history.forEach((msgs, ch) => {
+                    // Send all channel histories to admin
+                    Object.entries(channelHistory).forEach(([ch, msgs]) => {
                         send({ type: 'channel_history', channel: ch, messages: msgs.slice(-100) });
                     });
                     broadcastAll({ type: 'user_list', users: getUserList() });
@@ -153,16 +246,14 @@ wss.on('connection', (ws) => {
                 case 'admin_change_password': {
                     if (!isAdmin) break;
                     if (!data.newPassword || data.newPassword.length < 6) {
-                        send({ type: 'admin_change_password_result', ok: false, reason: 'Min 6 chars' });
-                        break;
+                        send({ type: 'admin_change_password_result', ok: false, reason: 'Min 6 chars' }); break;
                     }
                     ADMIN_PASSWORD = data.newPassword;
                     send({ type: 'admin_change_password_result', ok: true });
-                    console.log('[admin] password changed');
                     break;
                 }
 
-                // ── Admin: broadcast message ───────────────
+                // ── Admin: broadcast to channel ────────────
                 case 'admin_broadcast': {
                     if (!isAdmin) break;
                     const msg = {
@@ -171,12 +262,34 @@ wss.on('connection', (ws) => {
                         message: data.message, text: data.message,
                         timestamp: new Date().toISOString(), isAdmin: true
                     };
-                    pushHistory(msg.channel, msg);
+                    pushChannel(msg.channel, msg);
+                    saveChannels();
                     broadcastAll(msg);
                     break;
                 }
 
-                // ── Admin: manage projects ─────────────────
+                // ── Admin: kick ────────────────────────────
+                case 'admin_kick_user': {
+                    if (!isAdmin) break;
+                    clients.forEach((c, id) => {
+                        if ((c.name === data.userName || c.username === data.userName) && !c.isAdmin) {
+                            c.ws.send(JSON.stringify({ type: 'kicked', reason: data.reason || 'Kicked by admin' }));
+                            c.ws.close();
+                        }
+                    });
+                    break;
+                }
+
+                // ── Admin: clear channel ───────────────────
+                case 'admin_clear_channel': {
+                    if (!isAdmin) break;
+                    channelHistory[data.channel] = [];
+                    saveChannels();
+                    broadcastAll({ type: 'channel_cleared', channel: data.channel });
+                    break;
+                }
+
+                // ── Admin: projects ────────────────────────
                 case 'admin_add_project': {
                     if (!isAdmin) break;
                     const proj = { ...data.project, id: Date.now(), createdAt: new Date().toISOString() };
@@ -200,43 +313,35 @@ wss.on('connection', (ws) => {
                     break;
                 }
 
-                // ── Admin: kick user ───────────────────────
-                case 'admin_kick_user': {
+                // ── Admin: delete registered user ──────────
+                case 'admin_delete_user': {
                     if (!isAdmin) break;
-                    clients.forEach((c, id) => {
-                        if (c.name === data.userName && !c.isAdmin) {
-                            c.ws.send(JSON.stringify({ type: 'kicked', reason: data.reason || 'Kicked by admin' }));
-                            c.ws.close();
-                        }
-                    });
+                    registeredUsers = registeredUsers.filter(u => u.username !== data.username);
+                    saveUsers();
+                    broadcastAdmins({ type: 'registered_users', users: registeredUsers });
                     break;
                 }
 
-                // ── Admin: clear channel history ───────────
-                case 'admin_clear_channel': {
-                    if (!isAdmin) break;
-                    history.set(data.channel, []);
-                    broadcastAll({ type: 'channel_cleared', channel: data.channel });
-                    break;
-                }
-
-                // ── User join ──────────────────────────────
+                // ── User join (workspace) ──────────────────
                 case 'user_join': {
-                    clientId   = `user_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-                    clientName = data.userName;
-                    clients.set(clientId, { ws, name: clientName, isAdmin: false });
-                    // Send channel history to the joining user
+                    clientId       = `user_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+                    clientName     = data.userName;
+                    clientUsername = data.username || data.userName.toLowerCase().replace(/\s+/g,'');
+                    const initials = data.initials || makeInitials(clientName);
+                    clients.set(clientId, { ws, name: clientName, username: clientUsername, initials, isAdmin: false });
+                    // Send this channel's history
                     const ch = data.channel || 'general';
-                    const hist = history.get(ch) || [];
-                    send({ type: 'channel_history', channel: ch, messages: hist.slice(-100) });
+                    send({ type: 'channel_history', channel: ch, messages: (channelHistory[ch] || []).slice(-100) });
+                    // Send full registered user list so sidebar DM list populates
+                    send({ type: 'registered_users', users: registeredUsers.map(u => ({ name: u.name, username: u.username, initials: u.initials })) });
                     // Notify everyone
-                    broadcastAll({ type: 'user_join', userName: clientName, timestamp: new Date().toISOString() });
+                    broadcastAll({ type: 'user_join', userName: clientName, username: clientUsername });
                     broadcastAll({ type: 'user_list', users: getUserList() });
-                    console.log(`[+] ${clientName}`);
+                    console.log(`[+] ${clientName} (${clientUsername})`);
                     break;
                 }
 
-                // ── User message ───────────────────────────
+                // ── Group channel message ──────────────────
                 case 'message': {
                     if (!clientName) break;
                     const msg = {
@@ -245,28 +350,75 @@ wss.on('connection', (ws) => {
                         channel:   data.channel || 'general',
                         userName:  clientName,
                         name:      clientName,
+                        username:  clientUsername,
                         initials:  data.initials || makeInitials(clientName),
                         message:   data.message,
                         text:      data.message,
                         timestamp: data.timestamp || new Date().toISOString()
                     };
-                    pushHistory(msg.channel, msg);
+                    pushChannel(msg.channel, msg);
+                    saveChannels();
                     broadcastAll(msg);
                     console.log(`[${msg.channel}] ${clientName}: ${msg.message.slice(0,60)}`);
                     break;
                 }
 
+                // ── Private Direct Message ─────────────────
+                case 'dm': {
+                    if (!clientName) break;
+                    const toUsername = data.to;   // target username
+                    const msg = {
+                        type:       'dm',
+                        from:        clientUsername,
+                        fromName:    clientName,
+                        fromInitials: data.initials || makeInitials(clientName),
+                        to:          toUsername,
+                        message:     data.message,
+                        text:        data.message,
+                        msgId:       data.msgId || null,
+                        timestamp:   data.timestamp || new Date().toISOString()
+                    };
+                    pushDM(clientUsername, toUsername, msg);
+                    saveDMs();
+                    // Send to recipient if online
+                    clients.forEach(c => {
+                        if (c.username === toUsername && c.ws.readyState === WebSocket.OPEN) {
+                            c.ws.send(JSON.stringify(msg));
+                        }
+                    });
+                    // Echo back to sender (confirmation)
+                    send(msg);
+                    // Send to admins for monitoring
+                    broadcastAdmins({ ...msg, type: 'dm_monitor' });
+                    console.log(`[DM] ${clientUsername} → ${toUsername}: ${msg.message.slice(0,60)}`);
+                    break;
+                }
+
+                // ── Request DM history ─────────────────────
+                case 'get_dm_history': {
+                    if (!clientUsername) break;
+                    const withUser = data.with;
+                    const key = dmKey(clientUsername, withUser);
+                    send({ type: 'dm_history', with: withUser, messages: (dmHistory[key] || []).slice(-100) });
+                    break;
+                }
+
                 // ── Request channel history ────────────────
                 case 'get_history': {
-                    const ch   = data.channel || 'general';
-                    const hist = history.get(ch) || [];
-                    send({ type: 'channel_history', channel: ch, messages: hist.slice(-100) });
+                    const ch = data.channel || 'general';
+                    send({ type: 'channel_history', channel: ch, messages: (channelHistory[ch] || []).slice(-100) });
                     break;
                 }
 
                 // ── Request projects ───────────────────────
                 case 'get_projects': {
                     send({ type: 'projects_list', projects });
+                    break;
+                }
+
+                // ── Request registered user list ───────────
+                case 'get_users': {
+                    send({ type: 'registered_users', users: registeredUsers.map(u => ({ name: u.name, username: u.username, initials: u.initials })) });
                     break;
                 }
             }
@@ -277,7 +429,7 @@ wss.on('connection', (ws) => {
         if (!clientId) return;
         clients.delete(clientId);
         if (clientName && !isAdmin) {
-            broadcastAll({ type: 'user_left', userName: clientName });
+            broadcastAll({ type: 'user_left', userName: clientName, username: clientUsername });
             broadcastAll({ type: 'user_list', users: getUserList() });
             console.log(`[-] ${clientName}`);
         }
@@ -290,24 +442,37 @@ wss.on('connection', (ws) => {
 function getUserList() {
     return Array.from(clients.values())
         .filter(c => !c.isAdmin)
-        .map(c => c.name);
+        .map(c => ({ name: c.name, username: c.username, initials: c.initials || makeInitials(c.name) }));
 }
 
-// Broadcast to ALL connected clients (users + admin)
 function broadcastAll(payload) {
     const json = JSON.stringify(payload);
-    clients.forEach(c => {
-        if (c.ws.readyState === WebSocket.OPEN) c.ws.send(json);
-    });
+    clients.forEach(c => { if (c.ws.readyState === WebSocket.OPEN) c.ws.send(json); });
+}
+
+function broadcastAdmins(payload) {
+    const json = JSON.stringify(payload);
+    clients.forEach(c => { if (c.isAdmin && c.ws.readyState === WebSocket.OPEN) c.ws.send(json); });
 }
 
 function makeInitials(name) {
-    return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    return (name||'?').trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0,2);
 }
 
 server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Elite Hackers running on port ${PORT}`);
-    console.log(`   Static root: ${ROOT}`);
+    console.log(`   Users registered: ${registeredUsers.length}`);
 });
 process.on('SIGTERM', () => { wss.close(() => server.close(() => process.exit(0))); });
 process.on('SIGINT',  () => { wss.close(() => server.close(() => process.exit(0))); });
+
+// ── Keep-alive heartbeat ──────────────────────
+setInterval(() => {
+    let dead = 0;
+    clients.forEach((c, id) => {
+        if (c.ws.readyState !== WebSocket.OPEN) { clients.delete(id); dead++; return; }
+        try { c.ws.ping(); } catch {}
+    });
+    if (dead > 0) broadcastAll({ type: 'user_list', users: getUserList() });
+    console.log(`[heartbeat] ${clients.size} live clients`);
+}, 14 * 60 * 1000);

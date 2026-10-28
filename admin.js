@@ -9,6 +9,7 @@
 let ws            = null;
 let isAuthed      = false;
 let onlineUsers   = new Map();
+let registeredUsers = [];
 let allMessages   = [];      // { channel, userName, message, timestamp }
 let projects      = [];
 let currentAdminPw = sessionStorage.getItem('eh_admin_pw') || '';
@@ -174,6 +175,12 @@ function handleWsMsg(data) {
         if (activeTab === 'dashboard') renderDashboard();
         updateMsgTargetDropdown();
 
+    } else if (data.type === 'registered_users') {
+        registeredUsers = data.users || [];
+        updateStatBadges();
+        if (activeTab === 'users') renderUsersTab();
+        if (activeTab === 'dashboard') renderDashboard();
+
     } else if (data.type === 'projects_list') {
         projects = data.projects || [];
         updateStatBadges();
@@ -299,19 +306,34 @@ document.getElementById('clear-channel-btn').addEventListener('click', () => {
 // ── Users Tab ──────────────────────────────────
 function renderUsersTab() {
     const tbody = document.getElementById('users-table-body');
-    if (!onlineUsers.size) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty-hint">No users online</td></tr>';
-        return;
+    if (!tbody) return;
+    if (!registeredUsers.length && !onlineUsers.size) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-hint">No registered users yet.</td></tr>';
+        updateStatBadges(); return;
     }
+    const rows = new Map();
+    registeredUsers.forEach(u => rows.set(u.username, { ...u, online: false }));
+    onlineUsers.forEach((info, uname) => {
+        if (rows.has(uname)) { rows.get(uname).online = true; rows.get(uname).channel = info.channel||'general'; }
+        else rows.set(uname, { name: info.name||uname, username: uname, password:'—', initials: info.initials||makeInitials(info.name||uname), online:true, channel:info.channel||'general' });
+    });
     tbody.innerHTML = '';
-    onlineUsers.forEach((info, name) => {
+    [...rows.values()].sort((a,b) => b.online - a.online || a.name.localeCompare(b.name)).forEach(u => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><div class="user-cell"><div class="user-av-sm">${esc(makeInitials(name))}</div><span>${esc(name)}</span></div></td>
-            <td><span class="status-online">Online</span></td>
-            <td><span style="font-family:var(--font-mono);font-size:.75em;color:var(--accent-cyan);">#${esc(info.channel||'general')}</span></td>
-            <td style="font-family:var(--font-mono);font-size:.75em;color:var(--text-muted);">${info.joinedAt ? new Date(info.joinedAt).toLocaleTimeString() : '—'}</td>
-            <td><button class="btn-kick" onclick="openKickModal('${esc(name)}')">Remove</button></td>`;
+            <td><div class="user-cell">
+                <div class="user-av-sm">${esc(u.initials||makeInitials(u.name))}</div>
+                <div><div style="font-weight:600;color:var(--text-primary);">${esc(u.name)}</div>
+                <div style="font-family:var(--font-mono);font-size:.7em;color:var(--text-muted);">@${esc(u.username)}</div></div>
+            </div></td>
+            <td style="font-family:var(--font-mono);font-size:.82em;">${esc(u.password||'—')}</td>
+            <td>${u.online?'<span class="status-online">Online</span>':'<span style="font-size:.8em;color:var(--text-muted);">Offline</span>'}</td>
+            <td style="font-family:var(--font-mono);font-size:.75em;color:var(--accent-blue);">${u.online?'#'+esc(u.channel||'general'):'—'}</td>
+            <td style="font-family:var(--font-mono);font-size:.75em;color:var(--text-muted);">${u.joinedAt?new Date(u.joinedAt).toLocaleDateString():'—'}</td>
+            <td style="display:flex;gap:5px;">
+                ${u.online?`<button class="btn-kick" onclick="openKickModal('${esc(u.username)}')">Kick</button>`:''}
+                <button class="btn-kick" style="background:#fef2f2;border-color:#fecaca;" onclick="deleteUser('${esc(u.username)}')">Delete</button>
+            </td>`;
         tbody.appendChild(tr);
     });
     updateStatBadges();
@@ -342,6 +364,12 @@ document.getElementById('confirm-kick-btn').addEventListener('click', () => {
     wsSend({ type: 'admin_kick_user', userName: name, reason: reason || 'Removed by admin' });
     document.getElementById('kick-modal').classList.add('hidden');
 });
+
+// Delete registered user
+window.deleteUser = function(username) {
+    if (!confirm(`Permanently delete user "${username}"? This cannot be undone.`)) return;
+    wsSend({ type: 'admin_delete_user', username });
+};
 
 // ── Projects Tab ───────────────────────────────
 function renderProjectsTab() {

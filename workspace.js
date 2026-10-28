@@ -1,11 +1,11 @@
 /* =====================================================
    ELITE HACKERS — Workspace App
-   Real-time multi-user chat via WebSocket
-   Auth · Chat · Tasks · Files · Members
+   Server-backed auth  ·  Group channels  ·  Private DMs
+   Real-time via WebSocket
    ===================================================== */
 'use strict';
 
-// ── Storage Helpers ───────────────────────────
+// ── Storage helpers ───────────────────────────
 const Store = {
     get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
     set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -13,42 +13,41 @@ const Store = {
 };
 
 // ── State ─────────────────────────────────────
-let currentUser    = null;
+let currentUser    = null;   // { username, name, initials }
 let currentChannel = 'general';
+let currentDmUser  = null;   // { username, name, initials } when in DM mode
+let isDmMode       = false;
 let ws             = null;
 let wsReady        = false;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
 let tasks          = Store.get('eh_tasks', []);
 let sharedFiles    = Store.get('eh_files', []);
-let onlineUsers    = new Map();
+let onlineUsers    = new Map();    // username → { name, initials }
+let registeredUsers = [];          // all registered users from server
+const sentMsgIds   = new Set();
+let lastSender     = null;
 
-// ── Utils ──────────────────────────────────────
-function makeInitials(name) {
-    return (name || '?').trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
-}
-function esc(s) {
-    const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML;
-}
-function formatBytes(b) {
-    if (b < 1024) return b + ' B';
-    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-    return (b/1048576).toFixed(1) + ' MB';
-}
+// ── Utils ─────────────────────────────────────
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; }
+function makeInitials(n) { return (n||'?').trim().split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function formatBytes(b) { if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 function getFileIcon(t='') {
-    if (t.startsWith('image/')) return '🖼️';
-    if (t.includes('pdf'))       return '📄';
-    if (t.includes('zip')||t.includes('rar')) return '🗜️';
-    if (t.includes('word')||t.includes('document')) return '📝';
-    if (t.includes('sheet')||t.includes('excel'))   return '📊';
-    if (t.includes('text')) return '📋';
-    if (t.includes('video')) return '🎬';
-    if (t.includes('audio')) return '🎵';
+    if(t.startsWith('image/')) return '🖼️';
+    if(t.includes('pdf')) return '📄';
+    if(t.includes('zip')||t.includes('rar')) return '🗜️';
+    if(t.includes('word')||t.includes('document')) return '📝';
+    if(t.includes('sheet')||t.includes('excel')) return '📊';
+    if(t.includes('text')) return '📋';
     return '📁';
 }
+function getApiBase() {
+    if (window.WS_BASE_URL) return window.WS_BASE_URL.replace('wss://','https://').replace('ws://','http://');
+    if (!location.hostname || location.hostname === 'localhost') return 'http://localhost:8080';
+    return `${location.protocol}//${location.host}`;
+}
 
-// ── Auth ──────────────────────────────────────
-function getUsers() { return Store.get('eh_users', []); }
-function saveUsers(u) { Store.set('eh_users', u); }
-
+// ── Auth (server-backed) ───────────────────────
 document.getElementById('tab-login').addEventListener('click', () => {
     document.getElementById('tab-login').classList.add('active');
     document.getElementById('tab-register').classList.remove('active');
@@ -62,32 +61,59 @@ document.getElementById('tab-register').addEventListener('click', () => {
     document.getElementById('login-form').classList.add('hidden');
 });
 
-document.getElementById('login-form').addEventListener('submit', e => {
+document.getElementById('login-form').addEventListener('submit', async e => {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim().toLowerCase();
     const password = document.getElementById('login-password').value;
     const errEl    = document.getElementById('login-error');
-    const user     = getUsers().find(u => u.username === username && u.password === password);
-    if (!user) { errEl.textContent = 'Invalid username or password.'; return; }
+    const btn      = e.target.querySelector('button[type=submit]');
+    btn.textContent = 'Signing in…'; btn.disabled = true;
     errEl.textContent = '';
-    loginSuccess(user);
+
+    try {
+        const r = await fetch(`${getApiBase()}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Login failed');
+        loginSuccess(data.user);
+    } catch(err) {
+        errEl.textContent = err.message;
+    } finally {
+        btn.textContent = 'Sign In'; btn.disabled = false;
+    }
 });
 
-document.getElementById('register-form').addEventListener('submit', e => {
+document.getElementById('register-form').addEventListener('submit', async e => {
     e.preventDefault();
     const name     = document.getElementById('reg-name').value.trim();
     const username = document.getElementById('reg-username').value.trim().toLowerCase();
     const password = document.getElementById('reg-password').value;
     const errEl    = document.getElementById('reg-error');
-    if (name.length < 2)     { errEl.textContent = 'Name too short.'; return; }
-    if (username.length < 3) { errEl.textContent = 'Username min 3 chars.'; return; }
-    if (password.length < 6) { errEl.textContent = 'Password min 6 chars.'; return; }
-    const users = getUsers();
-    if (users.find(u => u.username === username)) { errEl.textContent = 'Username taken.'; return; }
-    const user = { name, username, password, initials: makeInitials(name), joinedAt: new Date().toISOString() };
-    users.push(user); saveUsers(users);
+    const btn      = e.target.querySelector('button[type=submit]');
+    btn.textContent = 'Creating…'; btn.disabled = true;
     errEl.textContent = '';
-    loginSuccess(user);
+
+    if (name.length < 2)     { errEl.textContent = 'Name too short.'; btn.textContent='Create Account'; btn.disabled=false; return; }
+    if (username.length < 3) { errEl.textContent = 'Username min 3 chars.'; btn.textContent='Create Account'; btn.disabled=false; return; }
+    if (password.length < 6) { errEl.textContent = 'Password min 6 chars.'; btn.textContent='Create Account'; btn.disabled=false; return; }
+
+    try {
+        const r = await fetch(`${getApiBase()}/api/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, username, password })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Registration failed');
+        loginSuccess(data.user);
+    } catch(err) {
+        errEl.textContent = err.message;
+    } finally {
+        btn.textContent = 'Create Account'; btn.disabled = false;
+    }
 });
 
 function loginSuccess(user) {
@@ -120,7 +146,7 @@ function showWorkspace() {
     connectWebSocket();
     renderTaskBoard();
     renderFilesView();
-    renderMembersView();
+    renderDmSidebar();
 }
 
 // ── Navigation ─────────────────────────────────
@@ -128,6 +154,8 @@ document.querySelectorAll('.sb-nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.sb-nav-item').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        isDmMode = false;
+        currentDmUser = null;
         const view    = btn.dataset.view;
         const channel = btn.dataset.channel;
         if (view === 'chat' && channel) switchChannel(channel);
@@ -138,32 +166,85 @@ document.querySelectorAll('.sb-nav-item').forEach(btn => {
 ['sidebar-toggle','sidebar-toggle-tasks','sidebar-toggle-files','sidebar-toggle-members'].forEach(id => {
     document.getElementById(id)?.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
 });
+
 function switchView(name) {
     document.querySelectorAll('.view').forEach(v => { v.classList.remove('active'); v.classList.add('hidden'); });
     const t = document.getElementById(`view-${name}`);
     if (t) { t.classList.remove('hidden'); t.classList.add('active'); }
 }
+
 function switchChannel(ch) {
+    isDmMode = false; currentDmUser = null;
     currentChannel = ch;
-    const nameEl = document.getElementById('active-channel-name');
+    const nameEl    = document.getElementById('active-channel-name');
     const welcomeEl = document.getElementById('welcome-channel');
-    const inputEl = document.getElementById('chat-input');
-    if (nameEl) nameEl.textContent = ch;
+    const inputEl   = document.getElementById('chat-input');
+    if (nameEl)    nameEl.textContent = ch;
     if (welcomeEl) welcomeEl.textContent = ch;
-    if (inputEl) inputEl.placeholder = `Message #${ch}...`;
+    if (inputEl)   inputEl.placeholder = `Message #${ch}…`;
+    // Update topbar to show channel header
+    updateChatTopbar({ type: 'channel', name: ch });
     lastSender = null;
     clearMessages();
-    // Always request history from server for this channel
     if (ws && ws.readyState === WebSocket.OPEN) {
         wsSend({ type: 'get_history', channel: ch });
-    } else {
-        // Show any locally stored messages while offline
-        const local = Store.get(`eh_local_msgs_${ch}`, []);
-        local.forEach(m => renderMessage(m, m.userName === currentUser.name));
     }
-    // Clear unread badge for this channel
+    // Clear unread badge
     const badge = document.querySelector(`.sb-nav-item[data-channel="${ch}"] .unread-badge`);
     if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
+}
+
+// ── Open a private DM conversation ────────────
+function openDm(targetUser) {
+    isDmMode    = true;
+    currentDmUser = targetUser; // { username, name, initials }
+
+    // Deselect all sidebar items, highlight the DM user
+    document.querySelectorAll('.sb-nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.dm-user-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.username === targetUser.username);
+    });
+
+    // Switch to chat view
+    switchView('chat');
+    const inputEl = document.getElementById('chat-input');
+    if (inputEl) inputEl.placeholder = `Message ${targetUser.name}…`;
+
+    updateChatTopbar({ type: 'dm', user: targetUser });
+    lastSender = null;
+    clearMessages();
+
+    // Load DM history from server
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        wsSend({ type: 'get_dm_history', with: targetUser.username });
+    }
+    document.getElementById('sidebar').classList.remove('open');
+}
+
+function updateChatTopbar(info) {
+    const channelEl = document.getElementById('active-channel-name');
+    if (!channelEl) return;
+    if (info.type === 'dm') {
+        channelEl.textContent = `${info.user.name}`;
+        channelEl.style.color = 'var(--accent-purple)';
+        // Add DM indicator icon
+        const topbarChannel = document.querySelector('.topbar-channel');
+        if (topbarChannel) {
+            let icon = topbarChannel.querySelector('.dm-icon');
+            if (!icon) {
+                icon = document.createElement('span');
+                icon.className = 'dm-icon';
+                icon.style.cssText = 'background:#ede9fe;color:#7c3aed;font-family:var(--font-mono);font-size:.7em;padding:2px 8px;border-radius:100px;';
+                topbarChannel.insertBefore(icon, channelEl);
+            }
+            icon.textContent = 'DM';
+        }
+    } else {
+        channelEl.textContent = info.name;
+        channelEl.style.color = '';
+        const icon = document.querySelector('.dm-icon');
+        if (icon) icon.remove();
+    }
 }
 
 // ── WebSocket ─────────────────────────────────
@@ -178,173 +259,237 @@ function wsSend(payload) {
     if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(payload));
 }
 
-let reconnectTimer = null;
-let reconnectAttempts = 0;
-
 function connectWebSocket() {
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     try {
-        updateConnectionBadge(false, 'Connecting...');
+        updateConnectionStatus('Connecting…', false);
         ws = new WebSocket(getWsUrl());
         ws.onopen = () => {
             wsReady = true;
             reconnectAttempts = 0;
             clearTimeout(reconnectTimer);
-            updateConnectionBadge(true, 'Connected');
-            // Announce ourselves and request current channel history
-            wsSend({ type: 'user_join', userName: currentUser.name, initials: currentUser.initials, channel: currentChannel });
+            updateConnectionStatus('', true);
+            wsSend({ type: 'user_join', userName: currentUser.name, username: currentUser.username, initials: currentUser.initials, channel: currentChannel });
             wsSend({ type: 'get_history', channel: currentChannel });
-            // Sync any locally-stored messages when connection restored
+            wsSend({ type: 'get_users' });
             syncLocalMessages();
         };
         ws.onmessage = e => {
-            try { handleWsMessage(JSON.parse(e.data)); } catch(err) { console.error('WS parse error:', err); }
+            try { handleWsMessage(JSON.parse(e.data)); } catch(err) { console.error('WS parse:', err); }
         };
         ws.onclose = () => {
             wsReady = false;
             reconnectAttempts++;
             const delay = Math.min(30000, 2000 * reconnectAttempts);
-            updateConnectionBadge(false, `Reconnecting in ${Math.round(delay/1000)}s…`);
+            updateConnectionStatus(`Reconnecting…`, false);
             reconnectTimer = setTimeout(connectWebSocket, delay);
         };
-        ws.onerror = () => { wsReady = false; updateConnectionBadge(false, 'Connection error'); };
+        ws.onerror = () => { wsReady = false; updateConnectionStatus('Error', false); };
     } catch(e) {
-        updateConnectionBadge(false, 'Failed to connect');
+        updateConnectionStatus('Failed', false);
         reconnectTimer = setTimeout(connectWebSocket, 5000);
     }
 }
 
 function syncLocalMessages() {
-    // Send any locally-queued messages from when WS was offline
     ['general','random','certivaultid','mediflex','ai-analyzer'].forEach(ch => {
-        const localKey = `eh_local_msgs_${ch}`;
-        const local = Store.get(localKey, []);
-        if (local.length) {
-            local.forEach(msg => wsSend({ ...msg, type: 'message' }));
-            Store.del(localKey);
-        }
+        const key = `eh_local_msgs_${ch}`;
+        const local = Store.get(key, []);
+        if (local.length) { local.forEach(m => wsSend({ ...m, type: 'message' })); Store.del(key); }
     });
 }
 
-// Track IDs of messages we sent ourselves to skip echoes from server
-const sentMsgIds = new Set();
-
+// ── Handle incoming WS messages ────────────────
 function handleWsMessage(data) {
+
     if (data.type === 'channel_history') {
-        if (data.channel === currentChannel) {
-            lastSender = null;
-            clearMessages();
-            (data.messages || []).forEach(m => {
-                const isSelf = m.userName === currentUser.name;
-                renderMessage(m, isSelf);
-            });
+        if (!isDmMode && data.channel === currentChannel) {
+            lastSender = null; clearMessages();
+            (data.messages || []).forEach(m => renderMessage(m, m.userName === currentUser.name || m.username === currentUser.username));
+            scrollToBottom();
+        }
+
+    } else if (data.type === 'dm_history') {
+        if (isDmMode && currentDmUser && data.with === currentDmUser.username) {
+            lastSender = null; clearMessages();
+            (data.messages || []).forEach(m => renderDmMessage(m));
             scrollToBottom();
         }
 
     } else if (data.type === 'message') {
-        // Skip echo of our own optimistically-rendered message
-        if (data.msgId && sentMsgIds.has(data.msgId)) {
-            sentMsgIds.delete(data.msgId);
-            return;
-        }
-        if (data.channel === currentChannel) {
-            const isSelf = data.userName === currentUser.name;
-            // Only render from server for OTHER users' messages
-            // (our own messages were already rendered optimistically)
-            if (!isSelf) {
-                renderMessage(data, false);
-                scrollToBottom();
-            }
-        } else {
+        const msgId = data.msgId;
+        if (msgId && sentMsgIds.has(msgId)) { sentMsgIds.delete(msgId); return; }
+        if (!isDmMode && data.channel === currentChannel) {
+            const isSelf = data.userName === currentUser.name || data.username === currentUser.username;
+            if (!isSelf) { renderMessage(data, false); scrollToBottom(); }
+        } else if (!isDmMode && data.channel !== currentChannel) {
             showUnread(data.channel);
         }
 
-    } else if (data.type === 'user_join') {
-        onlineUsers.set(data.userName, true);
-        updateOnlineCount();
-        renderMembersView();
-        if (data.userName !== currentUser.name) {
-            appendSystemMsg(`${esc(data.userName)} joined`);
+    } else if (data.type === 'dm') {
+        const isMine = data.from === currentUser.username;
+        // If already in this DM conversation, render immediately
+        if (isDmMode && currentDmUser && (data.from === currentDmUser.username || data.to === currentDmUser.username)) {
+            if (!isMine) { renderDmMessage(data); scrollToBottom(); }
+        } else if (!isMine) {
+            // Show notification badge on the sender's DM button
+            showDmUnread(data.from, data.fromName);
         }
 
-    } else if (data.type === 'user_left') {
-        onlineUsers.delete(data.userName);
+    } else if (data.type === 'user_join') {
+        onlineUsers.set(data.username || data.userName, { name: data.userName, initials: makeInitials(data.userName) });
         updateOnlineCount();
         renderMembersView();
+        renderDmSidebar();
+        if (data.userName !== currentUser.name) appendSystemMsg(`${esc(data.userName)} joined`);
+
+    } else if (data.type === 'user_left') {
+        onlineUsers.delete(data.username || data.userName);
+        updateOnlineCount();
+        renderMembersView();
+        renderDmSidebar();
         appendSystemMsg(`${esc(data.userName)} left`);
 
     } else if (data.type === 'user_list') {
         onlineUsers.clear();
-        (data.users || []).forEach(u => onlineUsers.set(u, true));
+        (data.users || []).forEach(u => {
+            const uname = (typeof u === 'string') ? u : u.username;
+            const udata = (typeof u === 'object') ? u : { name: u, initials: makeInitials(u) };
+            onlineUsers.set(uname, udata);
+        });
         updateOnlineCount();
+        renderMembersView();
+        renderDmSidebar();
+
+    } else if (data.type === 'registered_users') {
+        registeredUsers = data.users || [];
+        renderDmSidebar();
         renderMembersView();
 
     } else if (data.type === 'kicked') {
         alert(`You were removed: ${data.reason || 'Kicked by admin'}`);
-        Store.del('eh_session');
-        location.reload();
+        Store.del('eh_session'); location.reload();
 
     } else if (data.type === 'channel_cleared') {
-        if (data.channel === currentChannel) {
-            lastSender = null;
-            clearMessages();
-        }
+        if (!isDmMode && data.channel === currentChannel) { lastSender = null; clearMessages(); }
     }
 }
 
-// ── Chat UI ───────────────────────────────────
+// ── DM Sidebar ─────────────────────────────────
+function renderDmSidebar() {
+    const container = document.getElementById('dm-users-list');
+    if (!container) return;
+
+    // Merge registeredUsers + onlineUsers, exclude self
+    const allUsers = new Map();
+    registeredUsers.forEach(u => {
+        if (u.username !== currentUser.username) allUsers.set(u.username, { username: u.username, name: u.name, initials: u.initials || makeInitials(u.name), online: false });
+    });
+    onlineUsers.forEach((udata, uname) => {
+        if (uname !== currentUser.username) {
+            const existing = allUsers.get(uname) || { username: uname, name: udata.name || uname, initials: udata.initials || makeInitials(udata.name || uname) };
+            allUsers.set(uname, { ...existing, online: true });
+        }
+    });
+
+    if (!allUsers.size) {
+        container.innerHTML = '<div style="font-size:.75em;color:var(--text-muted);padding:8px 10px;">No users yet</div>';
+        return;
+    }
+
+    // Sort: online first, then alphabetical
+    const sorted = [...allUsers.values()].sort((a,b) => (b.online - a.online) || a.name.localeCompare(b.name));
+
+    container.innerHTML = sorted.map(u => `
+        <button class="dm-user-btn sb-nav-item" data-username="${esc(u.username)}" onclick="openDm(${JSON.stringify(u).replace(/"/g,'&quot;')})">
+            <span class="dm-avatar">${esc(u.initials)}</span>
+            <span class="dm-name">${esc(u.name)}</span>
+            <span class="dm-status-dot ${u.online ? 'dm-online' : 'dm-offline'}"></span>
+            <span class="unread-badge hidden dm-unread-${esc(u.username)}">0</span>
+        </button>`).join('');
+}
+
+function showDmUnread(username, fromName) {
+    // Re-render with badge
+    const badge = document.querySelector(`.dm-unread-${username.replace(/[^a-z0-9]/gi,'_')}`);
+    if (badge) {
+        badge.classList.remove('hidden');
+        badge.textContent = String(parseInt(badge.textContent || '0') + 1);
+    } else {
+        // User might not be in sidebar yet — add them
+        if (!registeredUsers.find(u => u.username === username)) {
+            registeredUsers.push({ username, name: fromName || username, initials: makeInitials(fromName || username) });
+        }
+        renderDmSidebar();
+    }
+}
+
+// ── Chat UI helpers ────────────────────────────
 function clearMessages() {
     const area = document.getElementById('messages-area');
+    const label = isDmMode && currentDmUser ? `Direct Message with ${esc(currentDmUser.name)}` : `#${esc(currentChannel)}`;
+    const sublabel = isDmMode ? 'This is the beginning of your private conversation.' : 'This is the beginning of the conversation. Say hello!';
     area.innerHTML = `
         <div class="messages-welcome">
-            <div class="welcome-icon">#</div>
-            <h3>Welcome to #${esc(currentChannel)}</h3>
-            <p>This is the beginning of the conversation. Say hello!</p>
+            <div class="welcome-icon">${isDmMode ? '💬' : '#'}</div>
+            <h3>${isDmMode ? '' : 'Welcome to '}${label}</h3>
+            <p>${sublabel}</p>
         </div>`;
 }
 
-let lastSender = null;
 function renderMessage(msg, isSelf) {
-    const area      = document.getElementById('messages-area');
-    const name      = msg.userName || msg.name || 'Unknown';
-    const text      = msg.message  || msg.text  || '';
-    const initials  = msg.initials || makeInitials(name);
-    const time      = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+    const area     = document.getElementById('messages-area');
+    const name     = msg.userName || msg.name || 'Unknown';
+    const text     = msg.message  || msg.text  || '';
+    const initials = msg.initials || makeInitials(name);
+    const time     = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
     const sameAsPrev = lastSender === name;
     lastSender = name;
-
-    // Remove welcome banner on first message
     const welcome = area.querySelector('.messages-welcome');
     if (welcome) welcome.remove();
-
     if (sameAsPrev) {
-        // Append text-only to last group
-        const lastGroup = area.querySelector('.msg-group:last-child .msg-body');
-        if (lastGroup) {
-            const line = document.createElement('div');
-            line.className = 'msg-text';
-            line.textContent = text;
-            lastGroup.appendChild(line);
-            return;
-        }
+        const lastBody = area.querySelector('.msg-group:last-child .msg-body');
+        if (lastBody) { const l = document.createElement('div'); l.className='msg-text'; l.textContent=text; lastBody.appendChild(l); return; }
     }
-
     const div = document.createElement('div');
     div.className = 'msg-group';
-    const avatarColor = isSelf
-        ? 'background:linear-gradient(135deg,#7c3aed,#a855f7);'
-        : msg.isAdmin
-            ? 'background:linear-gradient(135deg,#ef4444,#f97316);'
-            : '';
+    const avatarStyle = isSelf ? 'background:linear-gradient(135deg,#7c3aed,#a855f7);' : msg.isAdmin ? 'background:linear-gradient(135deg,#dc2626,#f97316);' : '';
     div.innerHTML = `
         <div style="display:flex;gap:10px;align-items:flex-start;">
-            <div class="msg-avatar" style="${avatarColor}">${esc(initials)}</div>
+            <div class="msg-avatar" style="${avatarStyle}">${esc(initials)}</div>
             <div style="flex:1;min-width:0;">
                 <div class="msg-header">
-                    <span class="msg-username" style="${isSelf?'color:var(--accent-purple);':''}${msg.isAdmin?'color:#f97316;':''}">${esc(name)}</span>
+                    <span class="msg-username" style="${isSelf?'color:#7c3aed;':msg.isAdmin?'color:#f97316;':''}">${esc(name)}</span>
                     <span class="msg-timestamp">${time}</span>
                 </div>
                 <div class="msg-body"><div class="msg-text">${esc(text)}</div></div>
+            </div>
+        </div>`;
+    area.appendChild(div);
+}
+
+function renderDmMessage(msg) {
+    const area = document.getElementById('messages-area');
+    const isSelf = msg.from === currentUser.username;
+    const name  = isSelf ? currentUser.name : (msg.fromName || msg.from || 'Unknown');
+    const initials = isSelf ? currentUser.initials : (msg.fromInitials || makeInitials(name));
+    const text  = msg.message || msg.text || '';
+    const time  = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
+    const welcome = area.querySelector('.messages-welcome');
+    if (welcome) welcome.remove();
+    const div = document.createElement('div');
+    div.className = 'msg-group';
+    div.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:flex-start;${isSelf?'flex-direction:row-reverse;':''}">
+            <div class="msg-avatar" style="${isSelf?'background:linear-gradient(135deg,#7c3aed,#a855f7);':''}">${esc(initials)}</div>
+            <div style="flex:1;min-width:0;${isSelf?'text-align:right;':''}">
+                <div class="msg-header" style="${isSelf?'justify-content:flex-end;':''}">
+                    <span class="msg-username" style="${isSelf?'color:#7c3aed;':''}">${esc(name)}</span>
+                    <span class="msg-timestamp">${time}</span>
+                </div>
+                <div class="msg-body">
+                    <div class="msg-text" style="${isSelf?'display:inline-block;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;border:none;':''}">${esc(text)}</div>
+                </div>
             </div>
         </div>`;
     area.appendChild(div);
@@ -367,32 +512,22 @@ function scrollToBottom() {
 function showUnread(channel) {
     const btn = document.querySelector(`.sb-nav-item[data-channel="${channel}"]`);
     if (!btn) return;
-    let badge = btn.querySelector('.unread-badge');
+    const badge = btn.querySelector('.unread-badge');
     if (!badge) return;
     badge.classList.remove('hidden');
-    badge.textContent = parseInt(badge.textContent || '0') + 1;
+    badge.textContent = String(parseInt(badge.textContent || '0') + 1);
 }
 
-function updateConnectionBadge(connected, msg) {
-    const span = document.getElementById('online-count');
-    if (connected) {
-        if (span) { span.textContent = Math.max(1, onlineUsers.size); span.style.color = ''; }
-    } else {
-        if (span) { span.style.color = '#d97706'; }
+function updateConnectionStatus(msg, connected) {
+    let el = document.getElementById('ws-conn-status');
+    if (!el) {
+        el = document.createElement('span');
+        el.id = 'ws-conn-status';
+        el.style.cssText = 'font-family:var(--font-mono);font-size:.7em;';
+        document.querySelector('.topbar-right')?.appendChild(el);
     }
-    // Show connection status in topbar
-    const topbar = document.querySelector('.topbar-right');
-    if (topbar) {
-        let statusEl = document.getElementById('ws-conn-status');
-        if (!statusEl) {
-            statusEl = document.createElement('span');
-            statusEl.id = 'ws-conn-status';
-            statusEl.style.cssText = 'font-family:var(--font-mono);font-size:.7em;margin-left:8px;';
-            topbar.appendChild(statusEl);
-        }
-        statusEl.textContent = connected ? '' : (msg || '');
-        statusEl.style.color = connected ? '#059669' : '#d97706';
-    }
+    el.textContent = msg;
+    el.style.color = connected ? '#059669' : '#d97706';
 }
 
 function updateOnlineCount() {
@@ -400,57 +535,57 @@ function updateOnlineCount() {
     if (el) el.textContent = Math.max(1, onlineUsers.size);
 }
 
-// ── Send Message ──────────────────────────────
+// ── Send message ───────────────────────────────
 function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const text  = input.value.trim();
     if (!text) return;
+    input.value = '';
 
-    const msgId = `${currentUser.username}_${Date.now()}`;
-    sentMsgIds.add(msgId);
-
-    const payload = {
-        type:      'message',
-        msgId,
-        message:   text,
-        text:      text,
-        channel:   currentChannel,
-        userName:  currentUser.name,
-        name:      currentUser.name,
-        initials:  currentUser.initials,
-        timestamp: new Date().toISOString()
-    };
-
-    // Render our own message immediately (optimistic — always works)
-    renderMessage({ ...payload, isSelf: true }, true);
-    lastSender = currentUser.name;
-    scrollToBottom();
-
-    // Clear unread badge for this channel
-    const badge = document.querySelector(`.sb-nav-item[data-channel="${currentChannel}"] .unread-badge`);
-    if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
-
-    // Try sending via WebSocket; if not connected, store locally
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    if (isDmMode && currentDmUser) {
+        // Send private DM
+        const msgId = `${currentUser.username}_dm_${Date.now()}`;
+        const payload = {
+            type:        'dm',
+            to:          currentDmUser.username,
+            message:     text,
+            initials:    currentUser.initials,
+            msgId,
+            timestamp:   new Date().toISOString()
+        };
+        // Render immediately on our side
+        renderDmMessage({ ...payload, from: currentUser.username, fromName: currentUser.name, fromInitials: currentUser.initials });
+        scrollToBottom();
         wsSend(payload);
     } else {
-        // Persist locally even without server connection
-        const localKey = `eh_local_msgs_${currentChannel}`;
-        const local = Store.get(localKey, []);
-        local.push(payload);
-        Store.set(localKey, local);
-        // Show a subtle indicator
-        const area = document.getElementById('messages-area');
-        const hint = document.createElement('div');
-        hint.style.cssText = 'font-size:.72em;color:#d97706;padding:2px 0 4px 44px;font-family:var(--font-mono);';
-        hint.textContent = '⚡ Saved locally — will sync when server reconnects';
-        area.appendChild(hint);
+        // Send group channel message
+        const msgId = `${currentUser.username}_${Date.now()}`;
+        sentMsgIds.add(msgId);
+        const payload = {
+            type:      'message',
+            msgId,
+            message:   text,
+            text,
+            channel:   currentChannel,
+            userName:  currentUser.name,
+            name:      currentUser.name,
+            username:  currentUser.username,
+            initials:  currentUser.initials,
+            timestamp: new Date().toISOString()
+        };
+        renderMessage({ ...payload, isSelf: true }, true);
+        lastSender = currentUser.name;
         scrollToBottom();
-        // Try reconnecting
-        if (!ws || ws.readyState === WebSocket.CLOSED) connectWebSocket();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            wsSend(payload);
+        } else {
+            const k = `eh_local_msgs_${currentChannel}`;
+            const l = Store.get(k, []);
+            l.push(payload); Store.set(k, l);
+            appendSystemMsg('⚡ Saved locally — will sync when reconnected');
+            if (!ws || ws.readyState === WebSocket.CLOSED) connectWebSocket();
+        }
     }
-
-    input.value = '';
 }
 
 document.getElementById('send-message-btn').addEventListener('click', sendChatMessage);
@@ -458,14 +593,7 @@ document.getElementById('chat-input').addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
 });
 
-// Typing indicator
-let typingTimer = null;
-document.getElementById('chat-input').addEventListener('input', () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(() => {}, 2000);
-});
-
-// ── File Upload in Chat ───────────────────────
+// ── File uploads ───────────────────────────────
 document.getElementById('file-upload').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
     handleFileShare(file, 'chat'); e.target.value = '';
@@ -475,14 +603,10 @@ document.getElementById('file-share-input').addEventListener('change', e => {
 });
 
 function handleFileShare(file, ctx) {
-    if (file.size > 5 * 1024 * 1024) { alert('Max 5MB for demo storage.'); return; }
+    if (file.size > 5*1024*1024) { alert('Max 5MB for demo.'); return; }
     const reader = new FileReader();
     reader.onload = ev => {
-        const entry = {
-            id: Date.now() + Math.random(), name: file.name, type: file.type,
-            size: file.size, data: ev.target.result,
-            sharedBy: currentUser.name, ts: new Date().toISOString(), channel: currentChannel
-        };
+        const entry = { id: Date.now()+Math.random(), name: file.name, type: file.type, size: file.size, data: ev.target.result, sharedBy: currentUser.name, ts: new Date().toISOString(), channel: currentChannel };
         sharedFiles.push(entry);
         Store.set('eh_files', sharedFiles);
         if (ctx === 'chat') appendFileMsg(currentUser.name, entry, entry.ts);
@@ -493,7 +617,7 @@ function handleFileShare(file, ctx) {
 
 function appendFileMsg(name, file, ts) {
     const area = document.getElementById('messages-area');
-    const time = ts ? new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+    const time = ts ? new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
     const div  = document.createElement('div');
     div.className = 'msg-group';
     div.innerHTML = `
@@ -501,19 +625,14 @@ function appendFileMsg(name, file, ts) {
             <div class="msg-avatar">${esc(makeInitials(name))}</div>
             <div style="flex:1;">
                 <div class="msg-header"><span class="msg-username">${esc(name)}</span><span class="msg-timestamp">${time}</span></div>
-                <div class="msg-body">
-                    <a class="msg-file" href="${file.data}" download="${esc(file.name)}">
-                        ${getFileIcon(file.type)} ${esc(file.name)}
-                        <span style="color:var(--text-muted);font-size:0.85em;">(${formatBytes(file.size)})</span>
-                    </a>
-                </div>
+                <div class="msg-body"><a class="msg-file" href="${file.data}" download="${esc(file.name)}">${getFileIcon(file.type)} ${esc(file.name)} <span style="color:var(--text-muted);font-size:.85em;">(${formatBytes(file.size)})</span></a></div>
             </div>
         </div>`;
     area.appendChild(div);
     scrollToBottom();
 }
 
-// ── Task Board ────────────────────────────────
+// ── Task Board ─────────────────────────────────
 let editingTaskId = null;
 
 function renderTaskBoard() {
@@ -532,8 +651,8 @@ function renderTaskBoard() {
 function createTaskCard(task) {
     const card = document.createElement('div');
     card.className = 'task-card'; card.draggable = true; card.dataset.id = task.id;
-    const dlClass = getDeadlineClass(task.deadline);
-    const dlLabel = task.deadline ? formatDeadline(task.deadline) : '';
+    const dlClass = (() => { if (!task.deadline) return ''; const now=new Date(); now.setHours(0,0,0,0); const diff=(new Date(task.deadline)-now)/86400000; return diff<0?'overdue':diff<=2?'soon':'ok'; })();
+    const dlLabel = task.deadline ? new Date(task.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
     card.innerHTML = `
         <div class="task-card-title">${esc(task.title)}</div>
         <div class="task-card-meta">
@@ -547,17 +666,6 @@ function createTaskCard(task) {
             <button class="tc-action tc-delete" onclick="deleteTask(${task.id})">Delete</button>
         </div>`;
     return card;
-}
-
-function getDeadlineClass(dl) {
-    if (!dl) return '';
-    const now = new Date(); now.setHours(0,0,0,0);
-    const d = new Date(dl);
-    const diff = (d - now) / 86400000;
-    return diff < 0 ? 'overdue' : diff <= 2 ? 'soon' : 'ok';
-}
-function formatDeadline(dl) {
-    return new Date(dl).toLocaleDateString('en-US', { month:'short', day:'numeric' });
 }
 
 function setupDnD() {
@@ -577,14 +685,14 @@ function setupDnD() {
             e.preventDefault(); list.classList.remove('drag-over');
             const d = document.querySelector('.task-card.dragging');
             if (!d) return;
-            const s  = list.closest('.task-column').dataset.status;
-            const t  = tasks.find(t => t.id === parseInt(d.dataset.id));
+            const s = list.closest('.task-column').dataset.status;
+            const t = tasks.find(t => t.id === parseInt(d.dataset.id));
             if (t) { t.status = s; saveTasks(); renderTaskBoard(); }
         });
     });
 }
 function getDragAfter(container, y) {
-    return [...container.querySelectorAll('.task-card:not(.dragging)')].reduce((cl, ch) => {
+    return [...container.querySelectorAll('.task-card:not(.dragging)')].reduce((cl,ch) => {
         const box = ch.getBoundingClientRect();
         const off = y - box.top - box.height/2;
         return off < 0 && off > cl.offset ? { offset:off, element:ch } : cl;
@@ -598,12 +706,12 @@ window.openTaskModal = function(defaultStatus='', editId='') {
         const t = tasks.find(t => t.id === parseInt(editId));
         if (!t) return;
         document.getElementById('task-modal-title').textContent = 'Edit Task';
-        document.getElementById('task-title-input').value  = t.title;
-        document.getElementById('task-desc-input').value   = t.description || '';
-        document.getElementById('task-priority').value     = t.priority;
-        document.getElementById('task-assign').value       = t.assignedTo || '';
-        document.getElementById('task-status').value       = t.status;
-        document.getElementById('task-deadline').value     = t.deadline || '';
+        document.getElementById('task-title-input').value = t.title;
+        document.getElementById('task-desc-input').value  = t.description || '';
+        document.getElementById('task-priority').value    = t.priority;
+        document.getElementById('task-assign').value      = t.assignedTo || '';
+        document.getElementById('task-status').value      = t.status;
+        document.getElementById('task-deadline').value    = t.deadline || '';
     } else {
         document.getElementById('task-modal-title').textContent = 'Create Task';
         if (defaultStatus) document.getElementById('task-status').value = defaultStatus;
@@ -618,11 +726,11 @@ window.closeTaskModal = function() {
 function populateAssignSelect() {
     const sel = document.getElementById('task-assign');
     sel.innerHTML = '<option value="">Unassigned</option>';
-    const names = [...new Set([
-        ...getUsers().map(u => u.name),
+    const allNames = new Set([
+        ...registeredUsers.map(u => u.name),
         'Harish raj.S','Varsha S','Pramila.J','Vasundhara.L','Jegannaathan.S.J','Hari hara sudhan.S','Monisha.S'
-    ])];
-    names.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o); });
+    ]);
+    allNames.forEach(n => { const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
 }
 
 document.getElementById('task-form').addEventListener('submit', e => {
@@ -673,9 +781,6 @@ function analyzeTasksSmartly() {
     else insights.push({ type:'success', icon:'✅', message:'<strong>No overdue tasks!</strong>' });
     const critical = tasks.filter(t=>t.priority==='critical'&&t.status!=='done');
     if (critical.length) insights.push({ type:'danger', icon:'🔥', message:`<strong>${critical.length} critical task${critical.length>1?'s':''}</strong> need urgent attention.` });
-    const wl = {}; tasks.filter(t=>t.assignedTo&&t.status!=='done').forEach(t=>{ wl[t.assignedTo]=(wl[t.assignedTo]||0)+1; });
-    const we = Object.entries(wl);
-    if (we.length>1) { const max=Math.max(...we.map(e=>e[1])); const min=Math.min(...we.map(e=>e[1])); if(max-min>=3) insights.push({ type:'warning', icon:'⚖️', message:`<strong>Workload imbalance:</strong> ${we.find(e=>e[1]===max)[0]} has ${max} open tasks.` }); }
     return insights;
 }
 
@@ -683,7 +788,7 @@ function analyzeTasksSmartly() {
 function renderFilesView() {
     const list = document.getElementById('files-list');
     if (!list) return;
-    if (!sharedFiles.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No files shared yet.</p></div>'; return; }
+    if (!sharedFiles.length) { list.innerHTML='<div class="empty-state"><div class="empty-icon">📂</div><p>No files shared yet.</p></div>'; return; }
     list.innerHTML = '';
     [...sharedFiles].reverse().forEach(file => {
         const item = document.createElement('div'); item.className = 'file-item';
@@ -694,25 +799,29 @@ function renderFilesView() {
 
 // ── Members ────────────────────────────────────
 const TEAM = [
-    { name:'Harish raj.S',      initials:'HR', portfolio:'https://harishraj2107.netlify.app/' },
-    { name:'Varsha S',          initials:'VS', portfolio:'https://silly-mochi-a1dcef.netlify.app/' },
-    { name:'Pramila.J',         initials:'PJ', portfolio:'https://portfolio-pramilaj.vercel.app/' },
-    { name:'Vasundhara.L',      initials:'VL', portfolio:'https://vasundhara13.netlify.app/' },
-    { name:'Jegannaathan.S.J',  initials:'JS', portfolio:'https://jegannaathan.netlify.app/' },
-    { name:'Hari hara sudhan.S',initials:'HS', portfolio:'https://hariharasudhan1.netlify.app/' },
-    { name:'Monisha.S',         initials:'MS', portfolio:'https://monisha21.netlify.app/' },
+    { name:'Harish raj.S',      username:'harishraj',    initials:'HR', portfolio:'https://harishraj2107.netlify.app/' },
+    { name:'Varsha S',          username:'varshas',      initials:'VS', portfolio:'https://silly-mochi-a1dcef.netlify.app/' },
+    { name:'Pramila.J',         username:'pramilaj',     initials:'PJ', portfolio:'https://portfolio-pramilaj.vercel.app/' },
+    { name:'Vasundhara.L',      username:'vasundharal',  initials:'VL', portfolio:'https://vasundhara13.netlify.app/' },
+    { name:'Jegannaathan.S.J',  username:'jegannaathan', initials:'JS', portfolio:'https://jegannaathan.netlify.app/' },
+    { name:'Hari hara sudhan.S',username:'hariharasudhan',initials:'HS', portfolio:'https://hariharasudhan1.netlify.app/' },
+    { name:'Monisha.S',         username:'monishas',     initials:'MS', portfolio:'https://monisha21.netlify.app/' },
 ];
+
 function renderMembersView() {
     const grid = document.getElementById('members-grid');
     if (!grid) return;
     grid.innerHTML = '';
-    // Show team + any registered users
-    const all = [...TEAM];
-    getUsers().forEach(u => { if (!all.find(m => m.name === u.name)) all.push({ name:u.name, initials:u.initials||makeInitials(u.name) }); });
+    const all = new Map();
+    TEAM.forEach(m => all.set(m.username, { ...m, online: onlineUsers.has(m.username) || onlineUsers.has(m.name) }));
+    registeredUsers.forEach(u => {
+        if (!all.has(u.username)) all.set(u.username, { name:u.name, username:u.username, initials:u.initials||makeInitials(u.name), online: onlineUsers.has(u.username) });
+    });
     all.forEach(m => {
-        const online = onlineUsers.has(m.name) || m.name === currentUser?.name;
+        const online = m.online || m.name === currentUser?.name;
         const div = document.createElement('div'); div.className = 'member-item';
-        div.innerHTML = `<div class="member-item-avatar">${esc(m.initials||makeInitials(m.name))}</div><div class="member-item-name">${esc(m.name)}</div><div class="member-item-status ${online?'online':'offline'}">${online?'<span style="width:7px;height:7px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 6px var(--accent-green);"></span>Online':'<span style="width:7px;height:7px;border-radius:50%;background:var(--text-muted);"></span>Offline'}</div>${m.portfolio?`<a href="${m.portfolio}" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:.75em;color:var(--accent-blue);text-decoration:none;">Portfolio ↗</a>`:''}`;
+        div.innerHTML = `<div class="member-item-avatar">${esc(m.initials||makeInitials(m.name))}</div><div class="member-item-name">${esc(m.name)}</div><div class="member-item-status ${online?'online':'offline'}">${online?'<span style="width:7px;height:7px;border-radius:50%;background:#059669;"></span>Online':'<span style="width:7px;height:7px;border-radius:50%;background:#94a3b8;"></span>Offline'}</div>${m.portfolio?`<a href="${m.portfolio}" target="_blank" rel="noopener" style="display:block;margin-top:8px;font-size:.75em;color:#2563eb;text-decoration:none;">Portfolio ↗</a>`:''}
+        <button onclick='openDm(${JSON.stringify({ username: m.username, name: m.name, initials: m.initials||makeInitials(m.name) }).replace(/'/g,"&#39;")})' style="margin-top:8px;width:100%;padding:5px;border-radius:6px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-size:.75em;cursor:pointer;">💬 Message</button>`;
         grid.appendChild(div);
     });
 }

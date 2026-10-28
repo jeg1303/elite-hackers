@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
+    <!-- WebSocket config — must load before admin.js -->
+    <script src="ws-config.js"></script>
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
     <div class="grid-overlay"></div>
@@ -177,6 +179,7 @@
                         <thead>
                             <tr>
                                 <th>User</th>
+                                <th>Password</th>
                                 <th>Status</th>
                                 <th>Channel</th>
                                 <th>Joined</th>
