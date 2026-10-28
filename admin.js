@@ -38,18 +38,34 @@ function setWsBadge(connected) {
 }
 
 // ── Tab Navigation ─────────────────────────────
-document.querySelectorAll('.admin-nav-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-        btn.classList.add('active');
-        activeTab = btn.dataset.tab;
-        document.getElementById(`tab-${activeTab}`)?.classList.add('active');
-        if (activeTab === 'chat') renderChatTab();
-        if (activeTab === 'users') renderUsersTab();
-        if (activeTab === 'projects') renderProjectsTab();
-        if (activeTab === 'dashboard') renderDashboard();
+function showTab(tabName) {
+    // Hide all tabs — remove both 'active' and ensure 'hidden' is set
+    document.querySelectorAll('.admin-tab').forEach(t => {
+        t.classList.remove('active');
+        t.style.display = 'none';
     });
+    // Show target tab
+    const target = document.getElementById(`tab-${tabName}`);
+    if (target) {
+        target.classList.remove('hidden'); // remove !important override
+        target.classList.add('active');
+        target.style.display = 'block';   // force display regardless of hidden class
+    }
+    // Update sidebar active state
+    document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.admin-nav-btn[data-tab="${tabName}"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    activeTab = tabName;
+    // Render tab content
+    if (tabName === 'chat')      renderChatTab();
+    else if (tabName === 'users')     renderUsersTab();
+    else if (tabName === 'projects')  renderProjectsTab();
+    else if (tabName === 'dashboard') renderDashboard();
+    else if (tabName === 'settings')  renderSettingsTab();
+}
+
+document.querySelectorAll('.admin-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => showTab(btn.dataset.tab));
 });
 
 // ── Login ──────────────────────────────────────
@@ -94,7 +110,7 @@ function handleWsMsg(data) {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('admin-app').classList.remove('hidden');
             document.getElementById('info-host').textContent = getWsUrl();
-            renderDashboard();
+            showTab('dashboard');
             // Request project list and all channel histories on login
             wsSend({ type: 'get_projects' });
             ['general','random','certivaultid','mediflex','ai-analyzer'].forEach(ch =>
@@ -472,4 +488,24 @@ document.addEventListener('keydown', e => {
         // Still connect to receive WS events
         connectWS();
     }
+    // Ensure dashboard tab is visible by default (in case CSS hidden class is blocking)
+    const dashTab = document.getElementById('tab-dashboard');
+    if (dashTab) {
+        dashTab.style.display = 'block';
+        dashTab.classList.remove('hidden');
+        dashTab.classList.add('active');
+    }
 })();
+
+// ── Settings Tab Render ────────────────────────
+function renderSettingsTab() {
+    // Update server info fields
+    const hostEl = document.getElementById('info-host');
+    if (hostEl) hostEl.textContent = getWsUrl();
+    const onlineEl = document.getElementById('info-online');
+    if (onlineEl) onlineEl.textContent = onlineUsers.size;
+    // Reset password form feedback
+    const res = document.getElementById('pw-result');
+    if (res) { res.textContent = ''; res.className = 'form-feedback'; }
+}
+

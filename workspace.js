@@ -145,12 +145,25 @@ function switchView(name) {
 }
 function switchChannel(ch) {
     currentChannel = ch;
-    document.getElementById('active-channel-name').textContent = ch;
-    document.getElementById('welcome-channel').textContent     = ch;
-    document.getElementById('chat-input').placeholder = `Message #${ch}...`;
+    const nameEl = document.getElementById('active-channel-name');
+    const welcomeEl = document.getElementById('welcome-channel');
+    const inputEl = document.getElementById('chat-input');
+    if (nameEl) nameEl.textContent = ch;
+    if (welcomeEl) welcomeEl.textContent = ch;
+    if (inputEl) inputEl.placeholder = `Message #${ch}...`;
+    lastSender = null;
     clearMessages();
-    // Request history from server
-    wsSend({ type: 'get_history', channel: ch });
+    // Always request history from server for this channel
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        wsSend({ type: 'get_history', channel: ch });
+    } else {
+        // Show any locally stored messages while offline
+        const local = Store.get(`eh_local_msgs_${ch}`, []);
+        local.forEach(m => renderMessage(m, m.userName === currentUser.name));
+    }
+    // Clear unread badge for this channel
+    const badge = document.querySelector(`.sb-nav-item[data-channel="${ch}"] .unread-badge`);
+    if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
 }
 
 // ── WebSocket ─────────────────────────────────
@@ -166,28 +179,51 @@ function wsSend(payload) {
 }
 
 let reconnectTimer = null;
+let reconnectAttempts = 0;
+
 function connectWebSocket() {
-    if (ws && ws.readyState === WebSocket.CONNECTING) return;
+    if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
     try {
+        updateConnectionBadge(false, 'Connecting...');
         ws = new WebSocket(getWsUrl());
         ws.onopen = () => {
             wsReady = true;
+            reconnectAttempts = 0;
             clearTimeout(reconnectTimer);
+            updateConnectionBadge(true, 'Connected');
             // Announce ourselves and request current channel history
             wsSend({ type: 'user_join', userName: currentUser.name, initials: currentUser.initials, channel: currentChannel });
             wsSend({ type: 'get_history', channel: currentChannel });
-            updateConnectionBadge(true);
+            // Sync any locally-stored messages when connection restored
+            syncLocalMessages();
         };
         ws.onmessage = e => {
-            try { handleWsMessage(JSON.parse(e.data)); } catch {}
+            try { handleWsMessage(JSON.parse(e.data)); } catch(err) { console.error('WS parse error:', err); }
         };
         ws.onclose = () => {
             wsReady = false;
-            updateConnectionBadge(false);
-            reconnectTimer = setTimeout(connectWebSocket, 3500);
+            reconnectAttempts++;
+            const delay = Math.min(30000, 2000 * reconnectAttempts);
+            updateConnectionBadge(false, `Reconnecting in ${Math.round(delay/1000)}s…`);
+            reconnectTimer = setTimeout(connectWebSocket, delay);
         };
-        ws.onerror = () => { wsReady = false; };
-    } catch {}
+        ws.onerror = () => { wsReady = false; updateConnectionBadge(false, 'Connection error'); };
+    } catch(e) {
+        updateConnectionBadge(false, 'Failed to connect');
+        reconnectTimer = setTimeout(connectWebSocket, 5000);
+    }
+}
+
+function syncLocalMessages() {
+    // Send any locally-queued messages from when WS was offline
+    ['general','random','certivaultid','mediflex','ai-analyzer'].forEach(ch => {
+        const localKey = `eh_local_msgs_${ch}`;
+        const local = Store.get(localKey, []);
+        if (local.length) {
+            local.forEach(msg => wsSend({ ...msg, type: 'message' }));
+            Store.del(localKey);
+        }
+    });
 }
 
 // Track IDs of messages we sent ourselves to skip echoes from server
@@ -337,10 +373,26 @@ function showUnread(channel) {
     badge.textContent = parseInt(badge.textContent || '0') + 1;
 }
 
-function updateConnectionBadge(connected) {
-    const dot  = document.querySelector('.cta-dot, .online-dot');
+function updateConnectionBadge(connected, msg) {
     const span = document.getElementById('online-count');
-    if (span) span.style.color = connected ? 'var(--accent-green)' : 'var(--accent-red)';
+    if (connected) {
+        if (span) { span.textContent = Math.max(1, onlineUsers.size); span.style.color = ''; }
+    } else {
+        if (span) { span.style.color = '#d97706'; }
+    }
+    // Show connection status in topbar
+    const topbar = document.querySelector('.topbar-right');
+    if (topbar) {
+        let statusEl = document.getElementById('ws-conn-status');
+        if (!statusEl) {
+            statusEl = document.createElement('span');
+            statusEl.id = 'ws-conn-status';
+            statusEl.style.cssText = 'font-family:var(--font-mono);font-size:.7em;margin-left:8px;';
+            topbar.appendChild(statusEl);
+        }
+        statusEl.textContent = connected ? '' : (msg || '');
+        statusEl.style.color = connected ? '#059669' : '#d97706';
+    }
 }
 
 function updateOnlineCount() {
@@ -369,7 +421,7 @@ function sendChatMessage() {
         timestamp: new Date().toISOString()
     };
 
-    // Render our own message immediately (optimistic)
+    // Render our own message immediately (optimistic — always works)
     renderMessage({ ...payload, isSelf: true }, true);
     lastSender = currentUser.name;
     scrollToBottom();
@@ -378,7 +430,26 @@ function sendChatMessage() {
     const badge = document.querySelector(`.sb-nav-item[data-channel="${currentChannel}"] .unread-badge`);
     if (badge) { badge.classList.add('hidden'); badge.textContent = '0'; }
 
-    wsSend(payload);
+    // Try sending via WebSocket; if not connected, store locally
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        wsSend(payload);
+    } else {
+        // Persist locally even without server connection
+        const localKey = `eh_local_msgs_${currentChannel}`;
+        const local = Store.get(localKey, []);
+        local.push(payload);
+        Store.set(localKey, local);
+        // Show a subtle indicator
+        const area = document.getElementById('messages-area');
+        const hint = document.createElement('div');
+        hint.style.cssText = 'font-size:.72em;color:#d97706;padding:2px 0 4px 44px;font-family:var(--font-mono);';
+        hint.textContent = '⚡ Saved locally — will sync when server reconnects';
+        area.appendChild(hint);
+        scrollToBottom();
+        // Try reconnecting
+        if (!ws || ws.readyState === WebSocket.CLOSED) connectWebSocket();
+    }
+
     input.value = '';
 }
 

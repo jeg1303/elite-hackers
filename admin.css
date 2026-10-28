@@ -64,8 +64,9 @@ body{background:var(--bg-base);color:var(--text-primary);font-family:var(--font-
 
 /* Main */
 .admin-main{flex:1;overflow-y:auto;background:var(--bg-base);height:100vh;}
+/* Tabs use display:none directly — NOT the .hidden utility class (which has !important) */
 .admin-tab{display:none;padding:26px 30px;}
-.admin-tab.active{display:block;}
+.admin-tab.active{display:block !important;}
 .tab-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:14px;flex-wrap:wrap;}
 .tab-header h2{font-family:var(--font-heading);font-size:1.35em;font-weight:800;color:var(--text-primary);}
 .tab-sub{font-family:var(--font-mono);font-size:.75em;color:var(--text-muted);}
