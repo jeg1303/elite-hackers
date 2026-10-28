@@ -3,144 +3,339 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Elite Hackers</title>
+    <title>Admin Panel — ELITE HACKERS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-    <!-- Background grids and glow nodes -->
-    <div class="cyber-glow-1"></div>
-    <div class="cyber-glow-2"></div>
-    <div class="cyber-grid-overlay"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="grid-overlay"></div>
 
-    <div id="login-container" class="login-container" style="display: none;">
-        <div class="login-box">
-            <div class="login-header">
-                <div class="security-shield">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                    </svg>
-                </div>
-                <span class="security-tag">// ACCESS DENIED</span>
-                <h1>DECRYPT FEED</h1>
-                <p>Elite Hackers Support Console</p>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-card">
+            <div class="login-logo">
+                <div class="login-shield">🛡️</div>
+                <h1>Admin Panel</h1>
+                <p>ELITE HACKERS Control Center</p>
             </div>
             <form id="login-form">
-                <div class="input-group">
-                    <label for="password">AUTHENTICATION PASSCODE</label>
-                    <input type="password" id="password" placeholder="••••••••••••" required autocomplete="current-password">
+                <div class="form-group">
+                    <label class="form-label">ADMIN PASSWORD</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Enter admin password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="login-btn">DECRYPT FEED</button>
-                <div id="login-error" class="error-message"></div>
+                <div id="login-error" class="form-error"></div>
+                <button type="submit" class="btn-login">Access Panel</button>
+            </form>
+            <a href="index.html" class="back-link">← Back to Portfolio</a>
+        </div>
+    </div>
+
+    <!-- Admin App -->
+    <div id="admin-app" class="admin-app hidden">
+
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-header">
+                <span class="brand-bracket">&lt;</span><span class="brand-text">EH</span><span class="brand-bracket">/&gt;</span>
+                <span class="admin-label">Admin</span>
+            </div>
+            <nav class="admin-nav">
+                <button class="admin-nav-btn active" data-tab="dashboard">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Dashboard
+                </button>
+                <button class="admin-nav-btn" data-tab="chat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    Live Chat
+                    <span class="nav-badge hidden" id="chat-badge">0</span>
+                </button>
+                <button class="admin-nav-btn" data-tab="users">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                    Users
+                    <span class="nav-badge" id="user-count-badge">0</span>
+                </button>
+                <button class="admin-nav-btn" data-tab="projects">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                    Projects
+                </button>
+                <button class="admin-nav-btn" data-tab="settings">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    Settings
+                </button>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <a href="index.html" class="sidebar-footer-link">← Portfolio</a>
+                <button id="logout-btn" class="sidebar-footer-link logout-link">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+
+            <!-- Dashboard Tab -->
+            <div class="admin-tab active" id="tab-dashboard">
+                <div class="tab-header">
+                    <h2>Dashboard</h2>
+                    <span class="tab-sub">Overview of your platform</span>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-blue">👥</div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="stat-online">0</div>
+                            <div class="stat-label">Online Now</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-green">💬</div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="stat-messages">0</div>
+                            <div class="stat-label">Messages Today</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-purple">🗂️</div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="stat-projects">0</div>
+                            <div class="stat-label">Projects</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon-orange">⚡</div>
+                        <div class="stat-info">
+                            <div class="stat-number" id="stat-channels">5</div>
+                            <div class="stat-label">Channels</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dash-panel">
+                        <div class="panel-head">
+                            <span>Recent Messages</span>
+                            <span class="ws-status-badge" id="ws-badge">
+                                <span class="ws-dot"></span> Connecting...
+                            </span>
+                        </div>
+                        <div id="dash-recent-msgs" class="dash-msg-list">
+                            <div class="empty-hint">No messages yet</div>
+                        </div>
+                    </div>
+                    <div class="dash-panel">
+                        <div class="panel-head"><span>Online Users</span></div>
+                        <div id="dash-online-users" class="dash-user-list">
+                            <div class="empty-hint">No users online</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Chat Tab -->
+            <div class="admin-tab hidden" id="tab-chat">
+                <div class="tab-header">
+                    <h2>Live Chat Monitor</h2>
+                    <div class="tab-actions">
+                        <select id="chat-channel-select" class="form-select-dark" style="width:160px;">
+                            <option value="general">general</option>
+                            <option value="random">random</option>
+                            <option value="certivaultid">certivaultid</option>
+                            <option value="mediflex">mediflex</option>
+                            <option value="ai-analyzer">ai-analyzer</option>
+                        </select>
+                        <button class="btn-danger-sm" id="clear-channel-btn">Clear Channel</button>
+                    </div>
+                </div>
+                <div class="chat-monitor-wrap">
+                    <div class="chat-messages-panel" id="admin-chat-messages">
+                        <div class="empty-hint">No messages in this channel</div>
+                    </div>
+                    <div class="chat-compose">
+                        <div class="compose-row">
+                            <select id="msg-target" class="form-select-dark" style="width:160px;flex-shrink:0;">
+                                <option value="all">Broadcast to All</option>
+                            </select>
+                            <input type="text" id="admin-msg-input" class="form-input" placeholder="Type a message as Admin..." maxlength="500">
+                            <button id="admin-send-btn" class="btn-send">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="admin-tab hidden" id="tab-users">
+                <div class="tab-header">
+                    <h2>User Management</h2>
+                    <span class="tab-sub" id="user-count-label">0 users online</span>
+                </div>
+                <div class="users-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Status</th>
+                                <th>Channel</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="5" class="empty-hint">No users online</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div class="admin-tab hidden" id="tab-projects">
+                <div class="tab-header">
+                    <h2>Project Management</h2>
+                    <button class="btn-primary-sm" id="add-project-btn">+ Add Project</button>
+                </div>
+                <div id="projects-list-admin" class="projects-admin-grid">
+                    <div class="empty-hint">No projects yet. Add one above.</div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="admin-tab hidden" id="tab-settings">
+                <div class="tab-header">
+                    <h2>Settings</h2>
+                    <span class="tab-sub">Configure your admin panel</span>
+                </div>
+                <div class="settings-grid">
+                    <!-- Change Password -->
+                    <div class="settings-card">
+                        <h3 class="settings-card-title">
+                            <span>🔑</span> Change Admin Password
+                        </h3>
+                        <p class="settings-desc">Update the admin panel access password. Minimum 6 characters.</p>
+                        <form id="change-password-form">
+                            <div class="form-group">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" id="curr-password" class="form-input" placeholder="Current password" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">New Password</label>
+                                <input type="password" id="new-password" class="form-input" placeholder="New password (min 6 chars)" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Confirm New Password</label>
+                                <input type="password" id="confirm-password" class="form-input" placeholder="Confirm new password" required>
+                            </div>
+                            <div id="pw-result" class="form-feedback"></div>
+                            <button type="submit" class="btn-primary-sm">Update Password</button>
+                        </form>
+                    </div>
+
+                    <!-- Server Info -->
+                    <div class="settings-card">
+                        <h3 class="settings-card-title"><span>🖥️</span> Server Status</h3>
+                        <div class="server-info-rows">
+                            <div class="info-row"><span>WebSocket</span><span class="ws-status-badge" id="ws-badge-2"><span class="ws-dot"></span>Connecting...</span></div>
+                            <div class="info-row"><span>Host</span><span id="info-host" style="font-family:var(--font-mono);font-size:0.82em;color:var(--text-secondary);">—</span></div>
+                            <div class="info-row"><span>Online Users</span><span id="info-online">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="settings-card settings-card-danger">
+                        <h3 class="settings-card-title"><span>⚠️</span> Danger Zone</h3>
+                        <p class="settings-desc">These actions cannot be undone.</p>
+                        <button class="btn-danger-sm" id="clear-all-channels-btn">Clear All Channel History</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Project Add/Edit Modal -->
+    <div class="modal-overlay hidden" id="project-modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="project-modal-title">Add Project</h3>
+                <button class="modal-close-btn" id="close-project-modal">×</button>
+            </div>
+            <form id="project-form">
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label">Project Title *</label>
+                        <input type="text" id="proj-title" class="form-input" placeholder="e.g. CertiVaultID" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subtitle</label>
+                        <input type="text" id="proj-subtitle" class="form-input" placeholder="e.g. Digital Certificate Verification">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <textarea id="proj-desc" class="form-input form-textarea" placeholder="Project description..." rows="3" required></textarea>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="proj-status" class="form-input form-select">
+                            <option value="Active Dev">Active Dev</option>
+                            <option value="Deployed">Deployed</option>
+                            <option value="Prototype">Prototype</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Planned">Planned</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select id="proj-category" class="form-input form-select">
+                            <option value="fullstack">Full-Stack</option>
+                            <option value="ai">AI / ML</option>
+                            <option value="healthcare">Healthcare</option>
+                            <option value="hardware">Hardware</option>
+                            <option value="data">Data</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tech Stack (comma-separated)</label>
+                    <input type="text" id="proj-tech" class="form-input" placeholder="e.g. React, Node.js, MongoDB">
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label class="form-label">GitHub URL</label>
+                        <input type="url" id="proj-github" class="form-input" placeholder="https://github.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Live Demo URL</label>
+                        <input type="url" id="proj-demo" class="form-input" placeholder="https://...">
+                    </div>
+                </div>
+                <input type="hidden" id="proj-edit-id">
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" id="cancel-project-modal">Cancel</button>
+                    <button type="submit" class="btn-save">Save Project</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div id="admin-panel" class="admin-panel">
-        <header class="admin-header">
-            <div class="header-content">
-                <div class="header-title-area">
-                    <span class="header-prefix">// TERMINAL_CONSOLE</span>
-                    <h1>ELITE HACKERS CONTROL</h1>
-                </div>
-                <button id="logout-btn" class="logout-btn">TERMINATE SESSION</button>
+    <!-- Kick User Modal -->
+    <div class="modal-overlay hidden" id="kick-modal">
+        <div class="modal-box" style="max-width:380px;">
+            <div class="modal-header">
+                <h3>Remove User</h3>
+                <button class="modal-close-btn" onclick="document.getElementById('kick-modal').classList.add('hidden')">×</button>
             </div>
-        </header>
-
-        <div class="admin-container">
-            <div class="stats-section">
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="total-users">0</h3>
-                        <p>CONNECTED CHANNELS</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="total-messages">0</h3>
-                        <p>PACKETS RECEIVED</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon-wrapper">
-                        <div class="stat-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12 6 12 12 16 14"/>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="active-users">0</h3>
-                        <p>ACTIVE SESSIONS</p>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label class="form-label">Reason (optional)</label>
+                <input type="text" id="kick-reason" class="form-input" placeholder="Reason for removal...">
             </div>
-
-            <div class="main-content">
-                <div class="messages-section">
-                    <div class="section-header">
-                        <h2>LIVE COMMUNICATION PACKETS</h2>
-                        <button id="clear-messages-btn" class="action-btn" style="display: none;">PURGE LOGS</button>
-                    </div>
-                    <div id="messages-container" class="messages-container">
-                        <div class="empty-state">
-                            <p>// WAITING FOR INCOMING CHANNELS...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="users-section">
-                    <div class="section-header">
-                        <h2>ACTIVE CHANNELS</h2>
-                    </div>
-                    <div id="users-container" class="users-container">
-                        <div class="empty-state">
-                            <p>// NO ACTIVE NODES DETECTED</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="response-section" class="response-section" style="display: none;">
-                <div class="section-header">
-                    <h2>BROADCAST PACKET RESPONSE</h2>
-                </div>
-                <div class="response-form">
-                    <div class="select-wrapper">
-                        <select id="target-user" class="user-select">
-                            <option value="all">ALL NODES</option>
-                        </select>
-                    </div>
-                    <textarea id="response-message" placeholder="Type transmission payload here..." rows="3"></textarea>
-                    <button id="send-response-btn" class="send-btn">TRANSMIT RESPONSE</button>
-                </div>
-            </div>
-            
-            <div id="login-prompt" class="login-prompt">
-                <div class="login-prompt-content">
-                    <p>🔒 ENCRYPTED MONITORING // LOGIN REQUIRED TO TRANSMIT RESPONSES</p>
-                    <button id="show-login-btn" class="show-login-btn">DECRYPT FEED</button>
-                </div>
+            <input type="hidden" id="kick-username">
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="document.getElementById('kick-modal').classList.add('hidden')">Cancel</button>
+                <button class="btn-danger-sm" id="confirm-kick-btn">Remove User</button>
             </div>
         </div>
     </div>
